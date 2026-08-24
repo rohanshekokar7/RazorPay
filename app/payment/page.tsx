@@ -4,6 +4,7 @@ import { useCart } from '@/context/CartContext';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import Script from 'next/script';
 import { ArrowLeft, Lock, CreditCard, Banknote, Gift, Calendar, QrCode } from 'lucide-react';
 
 export default function PaymentPage() {
@@ -16,14 +17,53 @@ export default function PaymentPage() {
   const tax = cartTotal * 0.1;
   const finalTotal = cartTotal + shipping + tax;
 
-  const handleFinishPayment = () => {
-    alert('Payment successful! Your order has been placed.');
-    clearCart();
-    router.push('/');
+  const handleRazorpayPayment = async () => {
+    try {
+      const res = await fetch('/api/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: finalTotal }),
+      });
+      const order = await res.json();
+      
+      if (order.error) {
+        alert(order.error);
+        return;
+      }
+
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        amount: order.amount,
+        currency: order.currency,
+        name: 'RazorPay App',
+        description: 'Test Transaction',
+        order_id: order.id,
+        handler: function (response: any) {
+          alert(`Payment successful! Payment ID: ${response.razorpay_payment_id}`);
+          clearCart();
+          router.push('/');
+        },
+        prefill: {
+          name: 'John Doe',
+          email: 'john@example.com',
+          contact: '9999999999'
+        },
+        theme: {
+          color: '#3399cc'
+        }
+      };
+
+      const rzp1 = new (window as any).Razorpay(options);
+      rzp1.open();
+    } catch (error) {
+      console.error(error);
+      alert('Failed to initiate payment');
+    }
   };
 
   return (
     <div className="min-h-screen bg-[#f1f3f6] flex flex-col font-sans">
+      <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
       
       {/* Focused Header */}
       <header className="bg-[#131921] px-4 py-3 flex items-center shadow-sm w-full">
@@ -125,14 +165,14 @@ export default function PaymentPage() {
                     <p className="text-2xl font-bold text-gray-900 mb-6">${finalTotal.toFixed(2)}</p>
                     
                     {/* Simulated Blurred QR Code */}
-                    <div className="relative w-48 h-48 mb-6 border border-gray-100 rounded-lg p-2 bg-white flex items-center justify-center group cursor-pointer" onClick={handleFinishPayment}>
+                    <div className="relative w-48 h-48 mb-6 border border-gray-100 rounded-lg p-2 bg-white flex items-center justify-center group cursor-pointer" onClick={handleRazorpayPayment}>
                       <img 
                         src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=amazon-order-${finalTotal}`} 
                         alt="QR Code"
                         className="w-full h-full object-contain filter blur-sm transition-all group-hover:blur-0"
                       />
                       <button className="absolute inset-0 m-auto w-32 h-10 bg-white border border-gray-300 rounded font-semibold text-gray-900 shadow-sm opacity-100 group-hover:opacity-0 transition-opacity z-10 flex items-center justify-center pointer-events-none text-sm">
-                        Show QR code
+                        Pay with Razorpay
                       </button>
                     </div>
 
@@ -154,18 +194,18 @@ export default function PaymentPage() {
 
               {selectedMethod !== 'upi' && (
                 <div className="w-full h-full flex flex-col items-center justify-center text-center">
-                  <div className="w-16 h-16 bg-gray-200 rounded-full mb-4 flex items-center justify-center">
-                    <span className="text-2xl">🚧</span>
+                  <div className="w-16 h-16 bg-blue-50 rounded-full mb-4 flex items-center justify-center">
+                    <CreditCard className="w-8 h-8 text-blue-600" />
                   </div>
-                  <h3 className="text-lg font-bold text-gray-900 mb-2">Demo Mode</h3>
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">Pay via Razorpay</h3>
                   <p className="text-gray-500 text-sm max-w-[250px] mb-6">
-                    This is a demo. Please select the UPI option to see the scan interface.
+                    Click below to open the secure Razorpay checkout portal for Cards, Netbanking, and more.
                   </p>
                   <button 
-                    onClick={() => setSelectedMethod('upi')}
-                    className="px-6 py-2 border border-blue-600 text-blue-600 font-semibold rounded hover:bg-blue-50 transition-colors"
+                    onClick={handleRazorpayPayment}
+                    className="px-8 py-3 bg-blue-600 text-white font-semibold rounded hover:bg-blue-700 transition-colors shadow-sm"
                   >
-                    Go to UPI
+                    Open Payment Gateway
                   </button>
                 </div>
               )}

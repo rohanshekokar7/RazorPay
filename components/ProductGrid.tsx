@@ -122,8 +122,9 @@ export function ProductGrid({
                   )}
                   <button 
                     onClick={() => {
-                      alert(`Proceeding to checkout for ${selectedProduct.name}...`);
+                      addToCart(selectedProduct);
                       setSelectedProduct(null);
+                      router.push('/checkout');
                     }}
                     className="px-4 py-2 bg-[#ffa41c] hover:bg-[#fa8900] text-gray-900 rounded-full font-medium shadow-sm transition-colors border border-[#FF8F00] text-sm"
                   >

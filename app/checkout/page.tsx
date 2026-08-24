@@ -8,11 +8,21 @@ import { Navbar } from '@/components/Navbar';
 import { CreditCard, Wallet, Building2, CheckCircle2, ChevronRight } from 'lucide-react';
 
 export default function CheckoutPage() {
-  const { cart, cartTotal, clearCart } = useCart();
+  const { cart, cartTotal, clearCart, updateQuantity } = useCart();
   const router = useRouter();
   
   const [paymentMethod, setPaymentMethod] = useState('card');
   const [isProcessing, setIsProcessing] = useState(false);
+
+  const [address, setAddress] = useState({
+    name: 'John Doe',
+    type: 'WORK',
+    line1: '123 Commerce St, Suite 100',
+    cityStateZip: 'New York, NY 10001',
+    phone: '9876543210'
+  });
+  const [showAddressModal, setShowAddressModal] = useState(false);
+  const [tempAddress, setTempAddress] = useState(address);
 
   const shipping = cartTotal > 0 ? (cartTotal > 500 ? 0 : 25) : 0;
   const tax = cartTotal * 0.1; // 10% tax
@@ -89,14 +99,20 @@ export default function CheckoutPage() {
                 <div className="flex flex-col">
                   <span className="text-gray-500 font-medium text-sm mb-1">Deliver to:</span>
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="font-bold text-gray-900 text-lg">John Doe</span>
-                    <span className="bg-gray-100 text-gray-600 text-xs font-bold px-2 py-0.5 rounded">WORK</span>
+                    <span className="font-bold text-gray-900 text-lg">{address.name}</span>
+                    <span className="bg-gray-100 text-gray-600 text-xs font-bold px-2 py-0.5 rounded">{address.type}</span>
                   </div>
-                  <p className="text-sm text-gray-700">123 Commerce St, Suite 100, New York, NY 10001</p>
-                  <p className="text-sm text-gray-700 mt-1">9876543210</p>
+                  <p className="text-sm text-gray-700">{address.line1}, {address.cityStateZip}</p>
+                  <p className="text-sm text-gray-700 mt-1">{address.phone}</p>
                 </div>
               </div>
-              <button className="text-blue-600 text-sm font-medium border border-gray-300 px-4 py-1.5 rounded hover:bg-gray-50 transition-colors">
+              <button 
+                onClick={() => {
+                  setTempAddress(address);
+                  setShowAddressModal(true);
+                }}
+                className="text-blue-600 text-sm font-medium border border-gray-300 px-4 py-1.5 rounded hover:bg-gray-50 transition-colors"
+              >
                 Change
               </button>
             </div>
@@ -126,9 +142,20 @@ export default function CheckoutPage() {
                     </div>
 
                     <div className="flex items-center gap-2 mt-auto">
-                      <div className="border border-gray-300 rounded px-2 py-1 flex items-center gap-2 bg-gray-50 cursor-not-allowed">
-                        <span className="text-sm font-medium text-gray-700">Qty: {item.quantity}</span>
-                        <ChevronRight className="w-4 h-4 text-gray-500 rotate-90" />
+                      <div className="flex items-center bg-gray-50 rounded shadow-sm border border-gray-300 overflow-hidden">
+                        <button 
+                          onClick={() => updateQuantity(item.id, Math.max(0, item.quantity - 1))}
+                          className="px-3 py-1 text-gray-600 hover:bg-gray-200 hover:text-gray-900 font-medium transition-colors"
+                        >
+                          −
+                        </button>
+                        <span className="text-sm font-semibold text-gray-900 w-8 text-center">{item.quantity}</span>
+                        <button 
+                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                          className="px-3 py-1 text-gray-600 hover:bg-gray-200 hover:text-gray-900 font-medium transition-colors"
+                        >
+                          +
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -200,6 +227,80 @@ export default function CheckoutPage() {
         </div>
 
       </main>
+
+      {/* Address Modal */}
+      {showAddressModal && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg w-full max-w-md overflow-hidden shadow-2xl">
+            <div className="bg-gray-100 border-b border-gray-200 px-5 py-3 font-bold text-gray-900 flex justify-between items-center">
+              Change Delivery Address
+              <button onClick={() => setShowAddressModal(false)} className="text-gray-500 hover:text-black">
+                ✕
+              </button>
+            </div>
+            <div className="p-6 flex flex-col gap-4">
+              <div className="flex flex-col gap-1">
+                <label className="text-sm font-bold text-gray-900">Full Name</label>
+                <input 
+                  type="text" 
+                  value={tempAddress.name}
+                  onChange={(e) => setTempAddress({...tempAddress, name: e.target.value})}
+                  className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f3a847]"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-sm font-bold text-gray-900">Address Line 1</label>
+                <input 
+                  type="text" 
+                  value={tempAddress.line1}
+                  onChange={(e) => setTempAddress({...tempAddress, line1: e.target.value})}
+                  className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f3a847]"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-sm font-bold text-gray-900">City, State, Zip Code</label>
+                <input 
+                  type="text" 
+                  value={tempAddress.cityStateZip}
+                  onChange={(e) => setTempAddress({...tempAddress, cityStateZip: e.target.value})}
+                  className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f3a847]"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-sm font-bold text-gray-900">Phone Number</label>
+                <input 
+                  type="text" 
+                  value={tempAddress.phone}
+                  onChange={(e) => setTempAddress({...tempAddress, phone: e.target.value})}
+                  className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f3a847]"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-sm font-bold text-gray-900">Address Type</label>
+                <select
+                  value={tempAddress.type}
+                  onChange={(e) => setTempAddress({...tempAddress, type: e.target.value})}
+                  className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f3a847]"
+                >
+                  <option value="HOME">Home</option>
+                  <option value="WORK">Work</option>
+                  <option value="OTHER">Other</option>
+                </select>
+              </div>
+              <button 
+                onClick={() => {
+                  setAddress(tempAddress);
+                  setShowAddressModal(false);
+                }}
+                className="w-full py-2 mt-2 bg-[#ffd814] hover:bg-[#f7ca00] text-gray-900 rounded-lg font-bold shadow-sm transition-colors border border-[#FCD200] text-sm"
+              >
+                Use this address
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
