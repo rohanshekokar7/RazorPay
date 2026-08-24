@@ -22,7 +22,7 @@ export function PaymentLink({ url, amount, title }: PaymentLinkProps) {
         </div>
         <div className="flex-1">
           <h4 className="font-semibold text-gray-900">{title}</h4>
-          <p className="text-sm font-medium text-gray-500">₹{amount.toFixed(2)}</p>
+          <p className="text-sm font-medium text-gray-500">${amount.toFixed(2)}</p>
         </div>
       </div>
       <div className="bg-gray-50 p-4">

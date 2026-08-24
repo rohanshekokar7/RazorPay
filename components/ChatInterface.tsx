@@ -16,9 +16,10 @@ interface Message {
 interface ChatInterfaceProps {
   onLogsReceived: (logs: AuditLog[]) => void;
   simulatePaymentTick?: number;
+  externalMessageTrigger?: { text: string; timestamp: number };
 }
 
-export function ChatInterface({ onLogsReceived, simulatePaymentTick = 0 }: ChatInterfaceProps) {
+export function ChatInterface({ onLogsReceived, simulatePaymentTick = 0, externalMessageTrigger }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'initial',
@@ -94,13 +95,17 @@ export function ChatInterface({ onLogsReceived, simulatePaymentTick = 0 }: ChatI
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || isLoading) return;
+  useEffect(() => {
+    if (externalMessageTrigger && externalMessageTrigger.text) {
+      handleSendMessage(externalMessageTrigger.text);
+    }
+  }, [externalMessageTrigger]);
 
-    const userMsg: Message = { id: Date.now().toString(), role: 'user', text: input };
+  const handleSendMessage = async (textToSend: string) => {
+    if (!textToSend.trim() || isLoading) return;
+
+    const userMsg: Message = { id: Date.now().toString(), role: 'user', text: textToSend };
     setMessages(prev => [...prev, userMsg]);
-    setInput('');
     setIsLoading(true);
 
     try {
@@ -143,38 +148,49 @@ export function ChatInterface({ onLogsReceived, simulatePaymentTick = 0 }: ChatI
     }
   };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim() || isLoading) return;
+    const currentInput = input;
+    setInput('');
+    await handleSendMessage(currentInput);
+  };
+
   return (
-    <div className="flex h-full flex-col bg-gray-50 rounded-xl overflow-hidden border border-gray-200 shadow-sm">
-      <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center gap-3">
+    <div className="flex h-full flex-col bg-blue-50 rounded-xl overflow-hidden border border-gray-200 shadow-sm relative">
+      {/* WhatsApp Doodle Background Overlay */}
+      <div 
+        className="absolute inset-0 opacity-[0.04] pointer-events-none z-0" 
+        style={{ backgroundImage: "url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png')", backgroundRepeat: 'repeat', backgroundSize: '400px' }}
+      ></div>
+
+      <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center gap-3 z-10 shadow-sm">
         <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
           <Bot className="h-6 w-6" />
         </div>
         <div>
-          <h2 className="font-semibold text-gray-900">AI Store Clerk</h2>
-          <p className="text-xs text-gray-500 flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-green-500 inline-block"></span>
-            Online
+          <h2 className="font-semibold text-gray-900 leading-tight">AI Store Clerk</h2>
+          <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block"></span>
+            online
           </p>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6 space-y-6">
+      <div className="flex-1 overflow-y-auto p-6 space-y-4 z-10">
         <AnimatePresence initial={false}>
           {messages.map((msg) => (
             <motion.div
               key={msg.id}
               initial={{ opacity: 0, y: 10, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              className={`flex gap-4 max-w-[85%] ${msg.role === 'user' ? 'ml-auto flex-row-reverse' : ''}`}
+              className={`flex max-w-[85%] ${msg.role === 'user' ? 'ml-auto justify-end' : ''}`}
             >
-              <div className={`flex shrink-0 h-8 w-8 items-center justify-center rounded-full ${msg.role === 'user' ? 'bg-gray-800 text-white' : 'bg-blue-100 text-blue-600'}`}>
-                {msg.role === 'user' ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
-              </div>
               <div className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                <div className={`rounded-2xl px-5 py-3 ${
+                <div className={`rounded-lg px-4 py-2 shadow-sm ${
                   msg.role === 'user' 
-                    ? 'bg-gray-900 text-white rounded-tr-sm' 
-                    : 'bg-white border border-gray-100 shadow-sm text-gray-800 rounded-tl-sm'
+                    ? 'bg-blue-600 text-white rounded-tr-sm' 
+                    : 'bg-white text-gray-800 rounded-tl-sm'
                 }`}>
                   <p className="whitespace-pre-wrap text-sm leading-relaxed">{msg.text}</p>
                 </div>

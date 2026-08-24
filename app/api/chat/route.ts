@@ -99,9 +99,8 @@ You can recommend products, check inventory, calculate discounts, and generate p
 CRITICAL RULES:
 1. CROSS-SELL REQUIREMENT: Whenever a user asks to buy an item, you MUST check the inventory for a logically related accessory (returned by the check_inventory tool) and naturally suggest adding it to the order to increase total revenue, BEFORE generating the payment link.
 2. You must explicitly explain every money action in the chat before generating a payment link.
-3. If the user asks to buy something over ₹1000, you must politely explain the limitation and NOT generate a link.
-4. If a "Payment Success Webhook" message is received, thank the user and confirm their order is being shipped.
-5. Use the provided tools to check inventory, calculate discounts, and generate payment links.`;
+3. If a "Payment Success Webhook" message is received, thank the user and confirm their order is being shipped.
+4. Use the provided tools to check inventory, calculate discounts, and generate payment links.`;
 
     // Map the incoming UI messages to Groq format
     const groqMessages: Groq.Chat.Completions.ChatCompletionMessageParam[] = messages.map((m: any) => ({
@@ -177,10 +176,10 @@ CRITICAL RULES:
             addLog(`Tool Success: ${name}`, 'SUCCESS', `Calculated discount for ${args.original_price}`);
         } 
         else if (name === 'generate_razorpay_link') {
-            const amountCheckLog = `[GUARDRAIL CHECK] Requested: ₹${args.amount} | Limit: ₹1000 | Status: ${args.amount > 1000 ? 'REJECTED' : 'PASSED'}`;
+            const amountCheckLog = `[GUARDRAIL CHECK] Requested: $${args.amount} | Limit: $1000 | Status: ${args.amount > 1000 ? 'REJECTED' : 'PASSED'}`;
             
             if (args.amount > 1000) {
-                result = { error: 'Order total exceeds maximum allowed amount of ₹1000. Guardrail enforced.' };
+                result = { error: 'Order total exceeds maximum allowed amount of $1000. Guardrail enforced.' };
                 addLog(`Guardrail Triggered`, 'ERROR', amountCheckLog);
             } else {
                 addLog(`Guardrail Passed`, 'SUCCESS', amountCheckLog);
@@ -192,7 +191,7 @@ CRITICAL RULES:
                     try {
                         const linkData = {
                           amount: Math.round(args.amount * 100), // Razorpay accepts amounts in paise
-                          currency: "INR",
+                          currency: "USD",
                           accept_partial: false,
                           description: `Payment for ${args.item}`,
                           customer: {
@@ -204,7 +203,7 @@ CRITICAL RULES:
                           reminder_enable: false
                         };
                         
-                        addLog(`Calling Razorpay SDK`, 'INFO', `Creating payment link for ₹${args.amount}`);
+                        addLog(`Calling Razorpay SDK`, 'INFO', `Creating payment link for $${args.amount}`);
                         
                         let short_url = `https://rzp.io/test/${Math.random().toString(36).substring(7)}`;
                         

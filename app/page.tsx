@@ -1,13 +1,35 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ChatInterface } from '@/components/ChatInterface';
 import { AuditTrailConsole, AuditLog } from '@/components/AuditTrailConsole';
-import { ShoppingBag } from 'lucide-react';
+import { ProductGrid } from '@/components/ProductGrid';
+import { ShoppingCart, MapPin, Search, Menu, Terminal } from 'lucide-react';
+import Link from 'next/link';
+import { useCart } from '@/context/CartContext';
 
 export default function Home() {
+  const { cart } = useCart();
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [simulatePaymentTick, setSimulatePaymentTick] = useState(0);
+  const [showConsole, setShowConsole] = useState(false);
+  const [globalSearch, setGlobalSearch] = useState('');
+  const [externalMessage, setExternalMessage] = useState<{ text: string; timestamp: number }>();
+  
+  const [location, setLocation] = useState('Mumbai 400001');
+  const [showLocationModal, setShowLocationModal] = useState(false);
+  const [tempLocation, setTempLocation] = useState('');
+
+  const [userName, setUserName] = useState<string | null>(null);
+  const [showSignInModal, setShowSignInModal] = useState(false);
+  const [tempUserName, setTempUserName] = useState('');
+
+  useEffect(() => {
+    const savedName = localStorage.getItem('userName');
+    if (savedName) {
+      setUserName(savedName);
+    }
+  }, []);
 
   const handleLogsReceived = (newLogs: AuditLog[]) => {
     setLogs(prev => [...prev, ...newLogs]);
@@ -19,37 +41,176 @@ export default function Home() {
 
   return (
     <main className="flex h-screen flex-col bg-gray-100 overflow-hidden">
-      {/* Header */}
-      <header className="flex-none bg-white border-b border-gray-200 px-6 py-4 shadow-sm z-10">
-        <div className="max-w-7xl mx-auto flex items-center gap-3">
-          <div className="bg-blue-600 p-2 rounded-lg text-white shadow-md shadow-blue-500/20">
-            <ShoppingBag className="h-6 w-6" />
+      {/* Amazon Style Header */}
+      <header className="flex-none flex flex-col z-10 w-full text-white">
+        {/* Top Navbar Row */}
+        <div className="bg-[#131921] px-4 py-2 flex items-center gap-6">
+          
+          {/* Logo Area */}
+          <div className="flex items-center hover:outline hover:outline-1 hover:outline-white p-1.5 rounded-sm cursor-pointer transition-all">
+            <span className="text-2xl font-bold tracking-tight">amazon<span className="text-[#febd69]">.in</span></span>
           </div>
-          <div>
-            <h1 className="text-xl font-bold text-gray-900 tracking-tight">AI Agentic Commerce</h1>
-            <p className="text-sm text-gray-500 font-medium">Conversational Checkout powered by Gemini Pro</p>
+
+          {/* Location Area */}
+          <div 
+            onClick={() => {
+              setTempLocation(location);
+              setShowLocationModal(true);
+            }}
+            className="hidden md:flex items-center gap-1 hover:outline hover:outline-1 hover:outline-white p-1.5 rounded-sm cursor-pointer transition-all"
+          >
+            <MapPin className="h-5 w-5 mt-3 text-white" />
+            <div className="flex flex-col leading-tight">
+              <span className="text-xs text-gray-300">Delivering to {location}</span>
+              <span className="text-sm font-bold">Update location</span>
+            </div>
           </div>
+
+          {/* Search Bar */}
+          <div className="flex-1 flex items-center h-10 rounded-md overflow-hidden mx-4 focus-within:ring-2 focus-within:ring-[#f3a847] bg-white">
+            <button className="bg-[#f3f3f3] hover:bg-[#e3e3e3] text-[#555] px-3 h-full text-sm font-medium border-r border-[#cdcdcd] flex items-center gap-1.5 transition-colors">
+              All 
+              <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="currentColor" className="opacity-70 mt-0.5">
+                <path d="M7 10l5 5 5-5z" />
+              </svg>
+            </button>
+            <input 
+              type="text" 
+              placeholder="Search Amazon.in"
+              value={globalSearch}
+              onChange={(e) => setGlobalSearch(e.target.value)}
+              className="flex-1 h-full px-3 text-[#111] placeholder:text-[#767676] focus:outline-none text-[15px]"
+            />
+            <button className="bg-[#febd69] hover:bg-[#f3a847] w-11 h-full flex items-center justify-center transition-colors">
+              <Search className="h-[22px] w-[22px] text-[#333]" strokeWidth={2.5} />
+            </button>
+          </div>
+
+          {/* Account Area */}
+          <Link 
+            href="/login"
+            className="hidden lg:flex flex-col leading-tight hover:outline hover:outline-1 hover:outline-white p-1.5 rounded-sm cursor-pointer transition-all"
+          >
+            <span className="text-xs">Hello, {userName ? userName : 'sign in'}</span>
+            <span className="text-sm font-bold">Account & Lists ▾</span>
+          </Link>
+
+          {/* Returns & Orders */}
+          <div className="hidden lg:flex flex-col leading-tight hover:outline hover:outline-1 hover:outline-white p-1.5 rounded-sm cursor-pointer transition-all">
+            <span className="text-xs">Returns</span>
+            <span className="text-sm font-bold">& Orders</span>
+          </div>
+
+          {/* Cart */}
+          <Link href="/cart" className="flex items-end hover:outline hover:outline-1 hover:outline-white p-1.5 rounded-sm cursor-pointer transition-all">
+            <div className="relative">
+              <ShoppingCart className="h-8 w-8" />
+              <span className="absolute -top-1 left-3 text-[#f3a847] font-bold">
+                {cart.reduce((total, item) => total + item.quantity, 0)}
+              </span>
+            </div>
+            <span className="text-sm font-bold hidden sm:inline mb-1 ml-1">Cart</span>
+          </Link>
+        </div>
+
+        {/* Bottom Navbar Row */}
+        <div className="bg-[#232f3e] px-8 py-2 flex items-center justify-between w-full text-sm font-medium overflow-x-auto whitespace-nowrap hide-scrollbar">
+          <div className="flex items-center gap-1 hover:outline hover:outline-1 hover:outline-white p-1 rounded-sm cursor-pointer transition-all">
+            <Menu className="h-5 w-5" />
+            <span>All</span>
+          </div>
+          <span className="hover:outline hover:outline-1 hover:outline-white p-1 rounded-sm cursor-pointer transition-all">Bestsellers</span>
+          <span className="hover:outline hover:outline-1 hover:outline-white p-1 rounded-sm cursor-pointer transition-all">Today's Deals</span>
+          <span className="hover:outline hover:outline-1 hover:outline-white p-1 rounded-sm cursor-pointer transition-all">Customer Service</span>
+          <span className="hover:outline hover:outline-1 hover:outline-white p-1 rounded-sm cursor-pointer transition-all">Mobiles</span>
+          <span className="hover:outline hover:outline-1 hover:outline-white p-1 rounded-sm cursor-pointer transition-all">New Releases</span>
+          <span className="hover:outline hover:outline-1 hover:outline-white p-1 rounded-sm cursor-pointer transition-all">Amazon Pay</span>
+          <span className="hover:outline hover:outline-1 hover:outline-white p-1 rounded-sm cursor-pointer transition-all">Electronics</span>
+          <span className="hover:outline hover:outline-1 hover:outline-white p-1 rounded-sm cursor-pointer transition-all">Home & Kitchen</span>
+          <span className="hover:outline hover:outline-1 hover:outline-white p-1 rounded-sm cursor-pointer transition-all">Fashion</span>
+          <span className="hover:outline hover:outline-1 hover:outline-white p-1 rounded-sm cursor-pointer transition-all">Computers</span>
+          <span className="hover:outline hover:outline-1 hover:outline-white p-1 rounded-sm cursor-pointer transition-all">Beauty & Personal Care</span>
         </div>
       </header>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex gap-6 p-6 max-w-7xl mx-auto w-full h-[calc(100vh-80px)] min-h-0">
-        {/* Left Pane: Chat Interface */}
-        <section className="flex-1 flex flex-col min-w-0">
-          <ChatInterface 
-             onLogsReceived={handleLogsReceived} 
-             simulatePaymentTick={simulatePaymentTick}
+      <div className="flex-1 flex p-4 w-full h-full min-h-0 relative bg-gray-100">
+        
+        {/* Left Pane: Storefront Product Grid */}
+        <section className={`transition-all duration-300 ease-in-out ${showConsole ? 'hidden' : 'hidden lg:flex flex-1 lg:w-[65%] min-w-0 flex-col pr-4'}`}>
+          <ProductGrid 
+            searchQuery={globalSearch} 
+            onAskAi={(text) => setExternalMessage({ text, timestamp: Date.now() })}
           />
         </section>
 
-        {/* Right Pane: Audit Trail Console */}
-        <section className="w-1/3 flex-none flex flex-col hidden lg:flex">
-          <AuditTrailConsole 
-             logs={logs} 
-             onSimulatePayment={handleSimulatePayment} 
+        {/* Center/Right Pane: Chat Interface */}
+        <section className={`flex flex-col min-w-0 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden transition-all duration-300 ${showConsole ? 'flex-1' : 'w-full lg:w-[35%] flex-none'}`}>
+          <ChatInterface 
+             onLogsReceived={handleLogsReceived} 
+             simulatePaymentTick={simulatePaymentTick}
+             externalMessageTrigger={externalMessage}
           />
         </section>
+
+        {/* Developer Console (Visible in Debug Mode) */}
+        {showConsole && (
+          <section className="w-1/3 flex-none flex flex-col hidden lg:flex border-l border-gray-200 pl-4">
+            <AuditTrailConsole 
+               logs={logs} 
+               onSimulatePayment={handleSimulatePayment} 
+            />
+          </section>
+        )}
       </div>
+
+      {/* Location Modal Overlay */}
+      {showLocationModal && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg w-full max-w-md overflow-hidden shadow-2xl">
+            <div className="bg-gray-100 border-b border-gray-200 px-5 py-3 font-bold text-gray-900 flex justify-between items-center">
+              Choose your location
+              <button onClick={() => setShowLocationModal(false)} className="text-gray-500 hover:text-black">
+                ✕
+              </button>
+            </div>
+            <div className="p-6">
+              <p className="text-sm text-gray-600 mb-4">
+                Delivery options and delivery speeds may vary for different locations.
+              </p>
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-bold text-gray-900">Enter a US zip code or city</label>
+                <div className="flex gap-2">
+                  <input 
+                    type="text" 
+                    value={tempLocation}
+                    onChange={(e) => setTempLocation(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        setLocation(tempLocation);
+                        setShowLocationModal(false);
+                      }
+                    }}
+                    className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f3a847] focus:border-transparent text-gray-900"
+                    placeholder="e.g. 10001"
+                  />
+                  <button 
+                    onClick={() => {
+                      setLocation(tempLocation);
+                      setShowLocationModal(false);
+                    }}
+                    className="px-5 py-2 bg-white border border-gray-300 rounded text-sm text-gray-900 font-medium hover:bg-gray-50 shadow-sm"
+                  >
+                    Apply
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sign In Modal Overlay Removed - Migrated to /login */}
     </main>
   );
 }
