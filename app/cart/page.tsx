@@ -2,23 +2,18 @@
 
 import { useCart } from '@/context/CartContext';
 import Link from 'next/link';
-import { Package, Trash2, ArrowLeft, ShieldCheck } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Package, Trash2, ArrowLeft } from 'lucide-react';
+import { Navbar } from '@/components/Navbar';
 
 export default function CartPage() {
-  const { cart, removeFromCart, cartTotal } = useCart();
+  const router = useRouter();
+  const { cart, removeFromCart, updateQuantity, cartTotal } = useCart();
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
-      {/* Simplified Amazon Header */}
-      <header className="bg-[#131921] px-4 py-3 flex items-center shadow-sm">
-        <Link href="/" className="flex items-center hover:outline hover:outline-1 hover:outline-white p-1 rounded-sm cursor-pointer transition-all">
-          <span className="text-2xl font-bold tracking-tight text-white">amazon<span className="text-[#febd69]">.in</span></span>
-        </Link>
-        <div className="ml-auto text-white flex items-center gap-2">
-          <ShieldCheck className="h-5 w-5 text-[#00a8e1]" />
-          <span className="text-sm font-semibold">100% Secure Checkout</span>
-        </div>
-      </header>
+      {/* Full Amazon Header */}
+      <Navbar />
 
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-8 flex flex-col lg:flex-row gap-6">
         
@@ -45,8 +40,13 @@ export default function CartPage() {
             <div className="flex flex-col gap-6">
               {cart.map((item) => (
                 <div key={item.id} className="flex gap-4 border-b border-gray-100 pb-6 last:border-0 last:pb-0">
-                  <div className="w-32 h-32 bg-gray-50 flex items-center justify-center rounded border border-gray-200 flex-shrink-0">
-                    <Package className="h-12 w-12 text-gray-400" />
+                  <div className="w-32 h-32 bg-gray-50 flex items-center justify-center rounded border border-gray-200 flex-shrink-0 overflow-hidden">
+                    <img 
+                      src={`https://picsum.photos/seed/${item.id}/400/300`} 
+                      alt={item.name} 
+                      className="w-full h-full object-cover" 
+                      loading="lazy"
+                    />
                   </div>
                   <div className="flex-1 flex flex-col">
                     <div className="flex justify-between items-start">
@@ -57,8 +57,20 @@ export default function CartPage() {
                     <p className="text-sm text-gray-500 mt-1 line-clamp-2">{item.description}</p>
                     
                     <div className="mt-auto pt-4 flex items-center gap-4">
-                      <div className="flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-full shadow-sm border border-gray-200">
-                        <span className="text-sm font-medium text-gray-700">Qty: {item.quantity}</span>
+                      <div className="flex items-center bg-gray-100 rounded-full shadow-sm border border-gray-200 overflow-hidden">
+                        <button 
+                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                          className="px-3 py-1 text-gray-600 hover:bg-gray-200 hover:text-gray-900 font-medium transition-colors"
+                        >
+                          −
+                        </button>
+                        <span className="text-sm font-semibold text-gray-900 w-8 text-center">{item.quantity}</span>
+                        <button 
+                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                          className="px-3 py-1 text-gray-600 hover:bg-gray-200 hover:text-gray-900 font-medium transition-colors"
+                        >
+                          +
+                        </button>
                       </div>
                       <div className="w-px h-4 bg-gray-300"></div>
                       <button 
@@ -101,7 +113,7 @@ export default function CartPage() {
               
               <button 
                 onClick={() => {
-                  alert(`Proceeding to traditional checkout for $${cartTotal.toFixed(2)}...`);
+                  router.push('/checkout');
                 }}
                 className="w-full py-2.5 bg-[#ffd814] hover:bg-[#f7ca00] text-gray-900 rounded-full font-medium shadow-sm transition-colors border border-[#FCD200] text-sm mb-3"
               >
