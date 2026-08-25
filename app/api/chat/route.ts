@@ -5,7 +5,7 @@ import Razorpay from 'razorpay';
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID || 'mock_key_id',
+  key_id: process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'mock_key_id',
   key_secret: process.env.RAZORPAY_KEY_SECRET || 'mock_key_secret',
 });
 
@@ -98,9 +98,11 @@ export async function POST(req: Request) {
 You can recommend products, check inventory, calculate discounts, and generate payment links.
 CRITICAL RULES:
 1. CROSS-SELL REQUIREMENT: Whenever a user asks to buy an item, you MUST check the inventory for a logically related accessory (returned by the check_inventory tool) and naturally suggest adding it to the order to increase total revenue, BEFORE generating the payment link.
-2. You must explicitly explain every money action in the chat before generating a payment link.
-3. If a "Payment Success Webhook" message is received, thank the user and confirm their order is being shipped.
-4. Use the provided tools to check inventory, calculate discounts, and generate payment links.`;
+2. If the user wants to buy a product of 100 or less, you MUST suggest buying another item to increase their total bill and tell them they will get a discount of 10% on the total.
+3. If the product is expensive (e.g. > 100), you MUST tell the user that they can get cashback or a discount by paying with a credit card, or get discounts by paying with UPI.
+4. You must explicitly explain every money action in the chat before generating a payment link.
+5. If a "Payment Success Webhook" message is received, thank the user and confirm their order is being shipped.
+6. Use the provided tools to check inventory, calculate discounts, and generate payment links.`;
 
     // Map the incoming UI messages to Groq format
     const groqMessages: Groq.Chat.Completions.ChatCompletionMessageParam[] = messages.map((m: any) => ({
@@ -207,7 +209,8 @@ CRITICAL RULES:
                         
                         let short_url = `https://rzp.io/test/${Math.random().toString(36).substring(7)}`;
                         
-                        if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_ID !== 'mock_key_id') {
+                        const rzpKey = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+                        if (rzpKey && rzpKey !== 'mock_key_id') {
                              const rzpResponse = await razorpay.paymentLink.create(linkData);
                              short_url = rzpResponse.short_url;
                         } else {

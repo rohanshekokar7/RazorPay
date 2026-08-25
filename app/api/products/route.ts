@@ -13,9 +13,10 @@ export async function GET(request: Request) {
     const skip = (page - 1) * limit;
 
     const where = search ? {
-      name: {
-        contains: search
-      }
+      OR: [
+        { name: { contains: search } },
+        { description: { contains: search } }
+      ]
     } : {};
 
     const [products, total] = await Promise.all([

@@ -50,8 +50,12 @@ export default function LoginPage() {
         
         {/* Logo & Header */}
         <div className="flex flex-col items-center mb-8">
-          <Link href="/" className="mb-6 flex items-center justify-center h-12 w-12 bg-blue-600 rounded-xl shadow-lg shadow-blue-600/30">
-            <span className="text-2xl font-bold tracking-tight text-white">a</span>
+          <Link href="/" className="mb-6 flex items-center justify-center">
+            <img 
+              src="/images/logo-transparent.png" 
+              alt="Buy BuDDY AI" 
+              className="h-16 object-contain" 
+            />
           </Link>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
             {isLogin ? 'Welcome back' : 'Create an account'}

@@ -16,6 +16,15 @@ export default function Home() {
   const [globalSearch, setGlobalSearch] = useState('');
   const [externalMessage, setExternalMessage] = useState<{ text: string; timestamp: number }>();
 
+  useEffect(() => {
+    // Check if there's a search query in the URL when the page loads
+    const params = new URLSearchParams(window.location.search);
+    const q = params.get('q');
+    if (q) {
+      setGlobalSearch(q);
+    }
+  }, []);
+
   const handleLogsReceived = (newLogs: AuditLog[]) => {
     setLogs(prev => [...prev, ...newLogs]);
   };

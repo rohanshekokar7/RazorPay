@@ -6,7 +6,7 @@ import { CartProvider } from "@/context/CartContext";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "AI Growth & Agentic Commerce",
+  title: "BuyBuddy AI",
   description: "Conversational In-App Checkout powered by AI",
 };
 

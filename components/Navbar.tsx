@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ShoppingCart, MapPin, Search, Menu } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
+import { useRouter } from 'next/navigation';
 
 interface NavbarProps {
   globalSearch?: string;
@@ -11,12 +12,21 @@ interface NavbarProps {
 }
 
 export function Navbar({ globalSearch = '', setGlobalSearch }: NavbarProps) {
+  const router = useRouter();
   const { cart } = useCart();
   const [userName, setUserName] = useState<string | null>(null);
   
-  const [location, setLocation] = useState('Mumbai 400001');
+  const [location, setLocation] = useState('New York 10001');
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [tempLocation, setTempLocation] = useState('');
+
+  const handleCategoryClick = (category: string) => {
+    if (setGlobalSearch) {
+      setGlobalSearch(category);
+    } else {
+      router.push(`/?q=${encodeURIComponent(category)}`);
+    }
+  };
 
   useEffect(() => {
     const savedName = localStorage.getItem('userName');
@@ -29,11 +39,16 @@ export function Navbar({ globalSearch = '', setGlobalSearch }: NavbarProps) {
     <>
       <header className="flex-none flex flex-col z-10 w-full text-white">
         {/* Top Navbar Row */}
-        <div className="bg-[#131921] px-4 py-2 flex items-center gap-6">
+        <div className="bg-slate-900 px-4 py-2 flex items-center gap-6">
           
           {/* Logo Area */}
-          <Link href="/" className="flex items-center hover:outline hover:outline-1 hover:outline-white p-1.5 rounded-sm cursor-pointer transition-all">
-            <span className="text-2xl font-bold tracking-tight">amazon<span className="text-[#febd69]">.in</span></span>
+          <Link href="/" className="flex items-center hover:outline hover:outline-1 hover:outline-white p-1 rounded-md cursor-pointer transition-all">
+            <img 
+              src="/images/logo-full.png" 
+              alt="Buy BuDDY AI" 
+              className="h-10 object-contain mix-blend-screen" 
+              style={{ filter: "brightness(20) contrast(1.2)" }}
+            />
           </Link>
 
           {/* Location Area */}
@@ -81,10 +96,10 @@ export function Navbar({ globalSearch = '', setGlobalSearch }: NavbarProps) {
           </Link>
 
           {/* Returns & Orders */}
-          <div className="hidden lg:flex flex-col leading-tight hover:outline hover:outline-1 hover:outline-white p-1.5 rounded-sm cursor-pointer transition-all">
+          <Link href="/orders" className="hidden lg:flex flex-col leading-tight hover:outline hover:outline-1 hover:outline-white p-1.5 rounded-sm cursor-pointer transition-all text-white">
             <span className="text-xs">Returns</span>
             <span className="text-sm font-bold">& Orders</span>
-          </div>
+          </Link>
 
           {/* Cart */}
           <Link href="/cart" className="flex items-end hover:outline hover:outline-1 hover:outline-white p-1.5 rounded-sm cursor-pointer transition-all">
@@ -99,22 +114,25 @@ export function Navbar({ globalSearch = '', setGlobalSearch }: NavbarProps) {
         </div>
 
         {/* Bottom Navbar Row */}
-        <div className="bg-[#232f3e] px-8 py-2 flex items-center justify-between w-full text-sm font-medium overflow-x-auto whitespace-nowrap hide-scrollbar">
-          <div className="flex items-center gap-1 hover:outline hover:outline-1 hover:outline-white p-1 rounded-sm cursor-pointer transition-all">
+        <div className="bg-slate-800 px-8 py-2 flex items-center justify-between w-full text-sm font-medium overflow-x-auto whitespace-nowrap hide-scrollbar">
+          <div 
+            onClick={() => handleCategoryClick('')}
+            className="flex items-center gap-1 hover:outline hover:outline-1 hover:outline-white p-1 rounded-sm cursor-pointer transition-all"
+          >
             <Menu className="h-5 w-5" />
             <span>All</span>
           </div>
-          <span className="hover:outline hover:outline-1 hover:outline-white p-1 rounded-sm cursor-pointer transition-all">Bestsellers</span>
-          <span className="hover:outline hover:outline-1 hover:outline-white p-1 rounded-sm cursor-pointer transition-all">Today's Deals</span>
-          <span className="hover:outline hover:outline-1 hover:outline-white p-1 rounded-sm cursor-pointer transition-all">Customer Service</span>
-          <span className="hover:outline hover:outline-1 hover:outline-white p-1 rounded-sm cursor-pointer transition-all">Mobiles</span>
-          <span className="hover:outline hover:outline-1 hover:outline-white p-1 rounded-sm cursor-pointer transition-all">New Releases</span>
-          <span className="hover:outline hover:outline-1 hover:outline-white p-1 rounded-sm cursor-pointer transition-all">Amazon Pay</span>
-          <span className="hover:outline hover:outline-1 hover:outline-white p-1 rounded-sm cursor-pointer transition-all">Electronics</span>
-          <span className="hover:outline hover:outline-1 hover:outline-white p-1 rounded-sm cursor-pointer transition-all">Home & Kitchen</span>
-          <span className="hover:outline hover:outline-1 hover:outline-white p-1 rounded-sm cursor-pointer transition-all">Fashion</span>
-          <span className="hover:outline hover:outline-1 hover:outline-white p-1 rounded-sm cursor-pointer transition-all">Computers</span>
-          <span className="hover:outline hover:outline-1 hover:outline-white p-1 rounded-sm cursor-pointer transition-all">Beauty & Personal Care</span>
+          <span onClick={() => handleCategoryClick('Bestsellers')} className="hover:outline hover:outline-1 hover:outline-white p-1 rounded-sm cursor-pointer transition-all">Bestsellers</span>
+          <span onClick={() => handleCategoryClick("Today's Deals")} className="hover:outline hover:outline-1 hover:outline-white p-1 rounded-sm cursor-pointer transition-all">Today's Deals</span>
+          <span onClick={() => handleCategoryClick('Customer Service')} className="hover:outline hover:outline-1 hover:outline-white p-1 rounded-sm cursor-pointer transition-all">Customer Service</span>
+          <span onClick={() => handleCategoryClick('Mobiles')} className="hover:outline hover:outline-1 hover:outline-white p-1 rounded-sm cursor-pointer transition-all">Mobiles</span>
+          <span onClick={() => handleCategoryClick('New Releases')} className="hover:outline hover:outline-1 hover:outline-white p-1 rounded-sm cursor-pointer transition-all">New Releases</span>
+
+          <span onClick={() => handleCategoryClick('Electronics')} className="hover:outline hover:outline-1 hover:outline-white p-1 rounded-sm cursor-pointer transition-all">Electronics</span>
+          <span onClick={() => handleCategoryClick('Home & Kitchen')} className="hover:outline hover:outline-1 hover:outline-white p-1 rounded-sm cursor-pointer transition-all">Home & Kitchen</span>
+          <span onClick={() => handleCategoryClick('Fashion')} className="hover:outline hover:outline-1 hover:outline-white p-1 rounded-sm cursor-pointer transition-all">Fashion</span>
+          <span onClick={() => handleCategoryClick('Computers')} className="hover:outline hover:outline-1 hover:outline-white p-1 rounded-sm cursor-pointer transition-all">Computers</span>
+          <span onClick={() => handleCategoryClick('Beauty')} className="hover:outline hover:outline-1 hover:outline-white p-1 rounded-sm cursor-pointer transition-all">Beauty & Personal Care</span>
         </div>
       </header>
 
