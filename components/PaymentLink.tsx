@@ -26,6 +26,14 @@ export function PaymentLink({ url, amount, title }: PaymentLinkProps) {
         </div>
       </div>
       <div className="bg-gray-50 p-4">
+        <div className="mb-4 flex flex-col items-center justify-center rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
+          <p className="mb-3 text-xs font-semibold tracking-wider text-gray-500 uppercase">Scan to Pay via Phone</p>
+          <img 
+            src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(url)}&margin=10`} 
+            alt="Payment QR Code" 
+            className="h-32 w-32 rounded-lg"
+          />
+        </div>
         <a
           href={url}
           target="_blank"

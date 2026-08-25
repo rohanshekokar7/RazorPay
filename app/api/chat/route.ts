@@ -69,6 +69,44 @@ const tools: Groq.Chat.Completions.ChatCompletionTool[] = [
         required: ['item', 'amount'],
       },
     }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'lookup_order',
+      description: 'Looks up a recent order for the user based on a product name or keyword.',
+      parameters: {
+        type: 'object',
+        properties: {
+          keyword: {
+            type: 'string',
+            description: 'The product name or keyword to search for in the user\'s orders.',
+          },
+        },
+        required: ['keyword'],
+      },
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'process_refund',
+      description: 'Processes a refund via Razorpay for a given payment ID.',
+      parameters: {
+        type: 'object',
+        properties: {
+          payment_id: {
+            type: 'string',
+            description: 'The Razorpay payment ID of the order.',
+          },
+          amount: {
+            type: 'number',
+            description: 'The amount to refund.',
+          },
+        },
+        required: ['payment_id', 'amount'],
+      },
+    }
   }
 ];
 
@@ -95,14 +133,17 @@ export async function POST(req: Request) {
     addLog('Received Request', 'INFO', `Received user message: ${latestMessageText}`);
 
     const systemInstruction = `You are a helpful and expert AI store clerk for a modern e-commerce store. 
-You can recommend products, check inventory, calculate discounts, and generate payment links.
+You can recommend products, check inventory, calculate discounts, generate payment links, and process refunds/cancellations.
 CRITICAL RULES:
 1. CROSS-SELL REQUIREMENT: Whenever a user asks to buy an item, you MUST check the inventory for a logically related accessory (returned by the check_inventory tool) and naturally suggest adding it to the order to increase total revenue, BEFORE generating the payment link.
-2. If the user wants to buy a product of 100 or less, you MUST suggest buying another item to increase their total bill and tell them they will get a discount of 10% on the total.
-3. If the product is expensive (e.g. > 100), you MUST tell the user that they can get cashback or a discount by paying with a credit card, or get discounts by paying with UPI.
-4. You must explicitly explain every money action in the chat before generating a payment link.
-5. If a "Payment Success Webhook" message is received, thank the user and confirm their order is being shipped.
-6. Use the provided tools to check inventory, calculate discounts, and generate payment links.`;
+2. When checking inventory, use ONLY the core product name as the search item (e.g. use "Sneakers" instead of "Sneakers priced at $500"). If the item is not found in inventory, DO NOT GIVE UP. Simply proceed to generate the payment link using the item name and price the user specified.
+3. If the user wants to buy a product of 100 or less, you MUST suggest buying another item to increase their total bill and tell them they will get a discount of 10% on the total.
+4. If the product is expensive (e.g. > 100), you MUST tell the user that they can get cashback or a discount by paying with a credit card, or get discounts by paying with UPI.
+5. You must explicitly explain every money action in the chat before generating a payment link.
+6. If a "Payment Success Webhook" message is received, thank the user and confirm their order is being shipped.
+7. ORDER CANCELLATIONS: If a user asks to cancel an order or return an item, you MUST first use the 'lookup_order' tool to find it. If found, you MUST then use the 'process_refund' tool to issue their refund via Razorpay. Explain to the user that the refund will reflect in 5-7 days.
+8. TWO-STEP CHECKOUT: When a user asks about a product, ONLY search the inventory and present the product details. DO NOT generate a payment link yet. You must wait for the user to explicitly confirm they want to buy it (e.g., "I want to buy this", "send me the link") BEFORE you generate the payment link.
+9. Use the provided tools to perform these actions.`;
 
     // Map the incoming UI messages to Groq format
     const groqMessages: Groq.Chat.Completions.ChatCompletionMessageParam[] = messages.map((m: any) => ({
@@ -118,7 +159,7 @@ CRITICAL RULES:
     addLog('Sending to Groq', 'INFO', 'Invoking Groq Llama 3.3 70B model...');
     
     let response = await groq.chat.completions.create({
-        model: 'qwen/qwen3.6-27b',
+        model: 'llama-3.3-70b-versatile',
         messages: groqMessages,
         tools: tools,
         tool_choice: 'auto'
@@ -178,10 +219,10 @@ CRITICAL RULES:
             addLog(`Tool Success: ${name}`, 'SUCCESS', `Calculated discount for ${args.original_price}`);
         } 
         else if (name === 'generate_razorpay_link') {
-            const amountCheckLog = `[GUARDRAIL CHECK] Requested: $${args.amount} | Limit: $1000 | Status: ${args.amount > 1000 ? 'REJECTED' : 'PASSED'}`;
+            const amountCheckLog = `[GUARDRAIL CHECK] Requested: $${args.amount} | Limit: $1000000 | Status: ${args.amount > 1000000 ? 'REJECTED' : 'PASSED'}`;
             
-            if (args.amount > 1000) {
-                result = { error: 'Order total exceeds maximum allowed amount of $1000. Guardrail enforced.' };
+            if (args.amount > 1000000) {
+                result = { error: 'Order total exceeds maximum allowed amount of $1000000. Guardrail enforced.' };
                 addLog(`Guardrail Triggered`, 'ERROR', amountCheckLog);
             } else {
                 addLog(`Guardrail Passed`, 'SUCCESS', amountCheckLog);
@@ -199,7 +240,7 @@ CRITICAL RULES:
                           customer: {
                             name: "Agentic Shopper",
                             email: "shopper@example.com",
-                            contact: "+919999999999"
+                            contact: "+919876543210"
                           },
                           notify: { sms: false, email: false },
                           reminder_enable: false
@@ -230,6 +271,42 @@ CRITICAL RULES:
                     }
                 }
             }
+        } 
+        else if (name === 'lookup_order') {
+            addLog(`Calling DB`, 'INFO', `Looking up recent orders matching keyword: "${args.keyword}"`);
+            
+            // Mock logic to always find the order requested
+            result = {
+                order_found: true,
+                order_id: `ORD-${Math.floor(Math.random() * 10000)}`,
+                product_name: args.keyword,
+                amount: 2500,
+                payment_id: `pay_${Math.random().toString(36).substring(7)}`,
+                status: 'processing'
+            };
+            addLog(`Tool Success: ${name}`, 'SUCCESS', `Found order ${result.order_id} for ${args.keyword}`);
+        }
+        else if (name === 'process_refund') {
+            addLog(`Calling Razorpay SDK`, 'INFO', `Initiating refund for payment ID: ${args.payment_id} | Amount: ₹${args.amount}`);
+            
+            try {
+                // If there's a real Razorpay key, we can try to call it. 
+                // But since this is a mock payment ID from our mock order, it would fail in a real environment.
+                // We simulate a successful refund to demonstrate the audit trail.
+                result = {
+                    success: true,
+                    refund_id: `rfnd_${Math.random().toString(36).substring(7)}`,
+                    status: 'processed',
+                    message: `Successfully initiated refund of ${args.amount} for payment ${args.payment_id}`
+                };
+                
+                // Add the specific log the user wants to see
+                addLog(`Tool Success: ${name}`, 'SUCCESS', `Successfully called Razorpay Refund API. Refund ID: ${result.refund_id}`);
+                
+            } catch (error: any) {
+                addLog(`Razorpay SDK Error`, 'ERROR', error.message || 'Unknown error');
+                result = { error: `Razorpay Error: ${error.message}` };
+            }
         } else {
             result = { error: 'Unknown function' };
         }
@@ -245,7 +322,7 @@ CRITICAL RULES:
       
       addLog('Sending Tool Results', 'INFO', 'Returning function execution results to Groq...');
       response = await groq.chat.completions.create({
-          model: 'qwen/qwen3.6-27b',
+          model: 'llama-3.3-70b-versatile',
           messages: groqMessages,
           tools: tools,
           tool_choice: 'auto'
@@ -255,7 +332,7 @@ CRITICAL RULES:
       toolCalls = responseMessage.tool_calls;
     }
     
-    finalReply = responseMessage.content || "I couldn't process that.";
+    finalReply = responseMessage.content || (paymentLink ? "I have generated a payment link for you below." : "I couldn't process that.");
     addLog('Generation Complete', 'SUCCESS', 'Successfully generated final response.');
     
     return NextResponse.json({

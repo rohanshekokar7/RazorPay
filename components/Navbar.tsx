@@ -95,11 +95,6 @@ export function Navbar({ globalSearch = '', setGlobalSearch }: NavbarProps) {
             <span className="text-sm font-bold">Account & Lists ▾</span>
           </Link>
 
-          {/* Returns & Orders */}
-          <Link href="/orders" className="hidden lg:flex flex-col leading-tight hover:outline hover:outline-1 hover:outline-white p-1.5 rounded-sm cursor-pointer transition-all text-white">
-            <span className="text-xs">Returns</span>
-            <span className="text-sm font-bold">& Orders</span>
-          </Link>
 
           {/* Cart */}
           <Link href="/cart" className="flex items-end hover:outline hover:outline-1 hover:outline-white p-1.5 rounded-sm cursor-pointer transition-all">
