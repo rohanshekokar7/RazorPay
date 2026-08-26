@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Navbar } from '@/components/Navbar';
 import { CreditCard, Wallet, Building2, CheckCircle2, ChevronRight } from 'lucide-react';
+import Script from 'next/script';
 
 export default function CheckoutPage() {
   const { cart, cartTotal, clearCart, updateQuantity } = useCart();
@@ -28,9 +29,82 @@ export default function CheckoutPage() {
   const tax = cartTotal * 0.1; // 10% tax
   const finalTotal = cartTotal + shipping + tax;
 
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
+    if (cart.length === 0) return;
     setIsProcessing(true);
-    router.push('/payment');
+
+    try {
+      // 1. Create order on the backend
+      const res = await fetch('/api/create-order', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ amount: finalTotal }),
+      });
+
+      const order = await res.json();
+
+      if (order.error) {
+        alert("Error creating order: " + order.error);
+        setIsProcessing(false);
+        return;
+      }
+
+      // 2. Initialize Razorpay Checkout
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID, // Use the key from env
+        amount: order.amount,
+        currency: order.currency,
+        name: "Buy BuDDY AI",
+        description: "Order Checkout",
+        order_id: order.id,
+        handler: function (response: any) {
+          alert(`Payment successful! Payment ID: ${response.razorpay_payment_id}`);
+          clearCart();
+          router.push('/');
+        },
+        prefill: {
+          name: address.name,
+          contact: address.phone,
+        },
+        theme: {
+          color: "#0f172a"
+        },
+        config: {
+          display: {
+            blocks: {
+              qr: {
+                name: "Pay with QR Code",
+                instruments: [
+                  {
+                    method: "upi",
+                    flows: ["qr"]
+                  }
+                ]
+              }
+            },
+            sequence: ["block.qr"],
+            preferences: {
+              show_default_blocks: true
+            }
+          }
+        }
+      };
+
+      const rzp1 = new window.Razorpay(options);
+      
+      rzp1.on('payment.failed', function (response: any){
+        alert("Payment Failed: " + response.error.description);
+      });
+      
+      rzp1.open();
+    } catch (error) {
+      console.error("Payment initialization failed:", error);
+      alert("Failed to initialize payment.");
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   if (cart.length === 0 && !isProcessing) {
@@ -50,6 +124,7 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col font-sans">
+      <Script src="https://checkout.razorpay.com/v1/checkout.js" />
       <Navbar />
 
       {/* Steps Tracker */}
