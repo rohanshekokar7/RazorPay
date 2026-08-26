@@ -33,7 +33,45 @@ export function Navbar({ globalSearch = '', setGlobalSearch }: NavbarProps) {
     if (savedName) {
       setUserName(savedName);
     }
+    const savedLocation = localStorage.getItem('userLocation');
+    if (savedLocation) {
+      setLocation(savedLocation);
+    }
   }, []);
+
+  const handleUseCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by your browser");
+      return;
+    }
+    
+    setTempLocation("Locating...");
+    
+    navigator.geolocation.getCurrentPosition(async (position) => {
+      try {
+        const { latitude, longitude } = position.coords;
+        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+        const data = await response.json();
+        
+        const city = data.address.city || data.address.town || data.address.village || data.address.county || "";
+        const postcode = data.address.postcode || "";
+        const locationString = `${city} ${postcode}`.trim() || "Unknown Location";
+        
+        setTempLocation(locationString);
+        setLocation(locationString);
+        localStorage.setItem('userLocation', locationString);
+        setShowLocationModal(false);
+      } catch (error) {
+        console.error("Error fetching location:", error);
+        setTempLocation("");
+        alert("Could not fetch location details");
+      }
+    }, (error) => {
+      console.error("Geolocation error:", error);
+      setTempLocation("");
+      alert("Please allow location access to use this feature");
+    });
+  };
 
   return (
     <>
@@ -163,14 +201,30 @@ export function Navbar({ globalSearch = '', setGlobalSearch }: NavbarProps) {
                   />
                   <button 
                     onClick={() => {
-                      setLocation(tempLocation);
-                      setShowLocationModal(false);
+                      if (tempLocation && tempLocation !== "Locating...") {
+                        setLocation(tempLocation);
+                        localStorage.setItem('userLocation', tempLocation);
+                        setShowLocationModal(false);
+                      }
                     }}
                     className="px-5 py-2 bg-white border border-gray-300 rounded text-sm text-gray-900 font-medium hover:bg-gray-50 shadow-sm"
                   >
                     Apply
                   </button>
                 </div>
+                
+                <div className="flex items-center gap-2 my-2">
+                  <div className="h-px bg-gray-200 flex-1"></div>
+                  <span className="text-xs text-gray-500 font-medium uppercase">Or</span>
+                  <div className="h-px bg-gray-200 flex-1"></div>
+                </div>
+                
+                <button 
+                  onClick={handleUseCurrentLocation}
+                  className="w-full py-2 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 rounded text-sm font-semibold transition-colors"
+                >
+                  Use my current location
+                </button>
               </div>
             </div>
           </div>

@@ -39,6 +39,29 @@ export default function LoginPage() {
         },
       });
     }
+
+    // Try to get location on login page load if not already set
+    if (!localStorage.getItem('userLocation') && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+          const data = await response.json();
+          
+          const city = data.address.city || data.address.town || data.address.village || data.address.county || "";
+          const postcode = data.address.postcode || "";
+          const locationString = `${city} ${postcode}`.trim();
+          
+          if (locationString) {
+            localStorage.setItem('userLocation', locationString);
+          }
+        } catch (error) {
+          console.error("Error fetching location in login:", error);
+        }
+      }, (error) => {
+        console.error("Geolocation error in login:", error);
+      });
+    }
   }, []);
 
   const handleSendOtp = async () => {
