@@ -24,6 +24,32 @@ export default function CheckoutPage() {
   });
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [tempAddress, setTempAddress] = useState(address);
+  const [isFetchingZip, setIsFetchingZip] = useState(false);
+
+  const fetchPincodeFromCity = async (query: string) => {
+    if (!query || query.length < 3) return;
+    setIsFetchingZip(true);
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1&addressdetails=1`);
+      const data = await res.json();
+      if (data && data.length > 0) {
+        const addressDetails = data[0].address;
+        const city = addressDetails.city || addressDetails.town || addressDetails.village || addressDetails.county || query;
+        const state = addressDetails.state || '';
+        const postcode = addressDetails.postcode || '';
+        
+        let formatted = city;
+        if (state) formatted += `, ${state}`;
+        if (postcode) formatted += ` ${postcode}`;
+        
+        setTempAddress(prev => ({ ...prev, cityStateZip: formatted }));
+      }
+    } catch (error) {
+      console.error("Failed to fetch location details", error);
+    } finally {
+      setIsFetchingZip(false);
+    }
+  };
 
   const shipping = cartTotal > 0 ? (cartTotal > 500 ? 0 : 25) : 0;
   const tax = cartTotal * 0.1; // 10% tax
@@ -333,14 +359,21 @@ export default function CheckoutPage() {
                   className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f3a847]"
                 />
               </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-sm font-bold text-gray-900">City, State, Zip Code</label>
-                <input 
-                  type="text" 
-                  value={tempAddress.cityStateZip}
-                  onChange={(e) => setTempAddress({...tempAddress, cityStateZip: e.target.value})}
-                  className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f3a847]"
-                />
+              <div className="flex flex-col gap-1 relative">
+                <label className="text-sm font-bold text-gray-900">City (Type & Click Outside for Zip Code)</label>
+                <div className="relative">
+                  <input 
+                    type="text" 
+                    value={tempAddress.cityStateZip}
+                    onChange={(e) => setTempAddress({...tempAddress, cityStateZip: e.target.value})}
+                    onBlur={(e) => fetchPincodeFromCity(e.target.value)}
+                    placeholder="e.g. Mumbai"
+                    className="border border-gray-300 rounded px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-[#f3a847] pr-8"
+                  />
+                  {isFetchingZip && (
+                    <div className="absolute right-2 top-2.5 w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                  )}
+                </div>
               </div>
               <div className="flex flex-col gap-1">
                 <label className="text-sm font-bold text-gray-900">Phone Number</label>
