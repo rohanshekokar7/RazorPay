@@ -105,8 +105,8 @@ export function Navbar({ globalSearch = '', setGlobalSearch }: NavbarProps) {
           </div>
 
           {/* Search Bar */}
-          <div className="flex-1 flex items-center h-10 rounded-md overflow-hidden mx-4 focus-within:ring-2 focus-within:ring-zinc-400 bg-white">
-            <button className="bg-zinc-100 hover:bg-zinc-200 text-zinc-700 px-4 h-full text-sm font-medium border-r border-zinc-300 flex items-center gap-1.5 transition-colors">
+          <div className="flex-1 flex items-center h-10 rounded-md overflow-hidden mx-4 focus-within:ring-2 focus-within:ring-cyan-500 bg-zinc-900 border border-zinc-800">
+            <button className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-4 h-full text-sm font-medium border-r border-zinc-700 flex items-center gap-1.5 transition-colors">
               All 
               <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="currentColor" className="opacity-70 mt-0.5">
                 <path d="M7 10l5 5 5-5z" />
@@ -117,10 +117,10 @@ export function Navbar({ globalSearch = '', setGlobalSearch }: NavbarProps) {
               placeholder="Search products..."
               value={globalSearch}
               onChange={(e) => setGlobalSearch && setGlobalSearch(e.target.value)}
-              className="flex-1 h-full px-4 text-zinc-900 placeholder:text-zinc-400 focus:outline-none text-[15px]"
+              className="flex-1 h-full px-4 text-zinc-100 bg-transparent placeholder:text-zinc-500 focus:outline-none text-[15px]"
             />
-            <button className="bg-zinc-800 hover:bg-zinc-700 w-12 h-full flex items-center justify-center transition-colors">
-              <Search className="h-[20px] w-[20px] text-white" strokeWidth={2} />
+            <button className="bg-cyan-500 hover:bg-cyan-400 w-12 h-full flex items-center justify-center transition-colors">
+              <Search className="h-[20px] w-[20px] text-zinc-950" strokeWidth={2.5} />
             </button>
           </div>
 
