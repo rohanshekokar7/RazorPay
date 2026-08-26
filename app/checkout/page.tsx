@@ -58,6 +58,7 @@ export default function CheckoutPage() {
         currency: order.currency,
         name: "Buy BuDDY AI",
         description: "Order Checkout",
+        image: "https://avatars.githubusercontent.com/u/7713209?s=280&v=4", // Razorpay Logo
         order_id: order.id,
         handler: function (response: any) {
           alert(`Payment successful! Payment ID: ${response.razorpay_payment_id}`);
