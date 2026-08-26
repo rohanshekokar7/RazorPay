@@ -31,7 +31,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     // Initialize reCAPTCHA when component mounts
-    if (!window.recaptchaVerifier) {
+    if (auth && !window.recaptchaVerifier) {
       window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
         size: 'invisible',
         callback: () => {
@@ -42,6 +42,11 @@ export default function LoginPage() {
   }, []);
 
   const handleSendOtp = async () => {
+    if (!auth) {
+      alert("Firebase is not configured! Please add your Firebase credentials to the .env file as instructed.");
+      return;
+    }
+    
     if (!phone) {
       alert("Please enter a valid phone number with country code (e.g. +1234567890)");
       return;
