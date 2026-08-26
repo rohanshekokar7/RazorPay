@@ -40,9 +40,9 @@ export default function CartPage() {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID, // Use the key from env
         amount: order.amount,
         currency: order.currency,
-        name: "Buy BuDDY AI",
+        name: "Razorpay",
         description: "Order Checkout",
-        image: "https://avatars.githubusercontent.com/u/7713209?s=280&v=4", // Razorpay Logo
+        image: "https://razorpay.com/favicon.png", // Razorpay Logo
         order_id: order.id,
         handler: function (response: any) {
           alert(`Payment successful! Payment ID: ${response.razorpay_payment_id}`);
