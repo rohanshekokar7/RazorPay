@@ -234,16 +234,21 @@ CRITICAL RULES:
                     try {
                         const linkData = {
                           amount: Math.round(args.amount * 100), // Razorpay accepts amounts in paise
-                          currency: "USD",
+                          currency: "INR", // Changed to INR to enable UPI, QR Code, and domestic payment options
                           accept_partial: false,
-                          description: `Payment for ${args.item}`,
+                          description: `Buy BuDDY AI Order: ${args.item}. Thank you for shopping with us!`,
                           customer: {
                             name: "Agentic Shopper",
                             email: "shopper@example.com",
                             contact: "+919876543210"
                           },
                           notify: { sms: false, email: false },
-                          reminder_enable: false
+                          reminder_enable: false,
+                          notes: {
+                            store: "Buy BuDDY AI",
+                            item: args.item,
+                            support: "support@buybuddy.ai"
+                          }
                         };
                         
                         addLog(`Calling Razorpay SDK`, 'INFO', `Creating payment link for $${args.amount}`);
