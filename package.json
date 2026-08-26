@@ -11,6 +11,7 @@
   "dependencies": {
     "@prisma/client": "^6.19.3",
     "csv-parser": "^3.2.1",
+    "firebase": "^12.18.0",
     "framer-motion": "^13.1.1",
     "groq-sdk": "^1.5.0",
     "lucide-react": "^1.34.0",

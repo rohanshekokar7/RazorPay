@@ -39,7 +39,7 @@ export function Navbar({ globalSearch = '', setGlobalSearch }: NavbarProps) {
     <>
       <header className="flex-none flex flex-col z-10 w-full text-white">
         {/* Top Navbar Row */}
-        <div className="bg-slate-900 px-4 py-2 flex items-center gap-6">
+        <div className="bg-zinc-950 px-4 py-3 flex items-center gap-6 border-b border-zinc-800 shadow-sm">
           
           {/* Logo Area */}
           <Link href="/" className="flex items-center hover:outline hover:outline-1 hover:outline-white p-1 rounded-md cursor-pointer transition-all">
@@ -67,8 +67,8 @@ export function Navbar({ globalSearch = '', setGlobalSearch }: NavbarProps) {
           </div>
 
           {/* Search Bar */}
-          <div className="flex-1 flex items-center h-10 rounded-md overflow-hidden mx-4 focus-within:ring-2 focus-within:ring-[#f3a847] bg-white">
-            <button className="bg-[#f3f3f3] hover:bg-[#e3e3e3] text-[#555] px-3 h-full text-sm font-medium border-r border-[#cdcdcd] flex items-center gap-1.5 transition-colors">
+          <div className="flex-1 flex items-center h-10 rounded-md overflow-hidden mx-4 focus-within:ring-2 focus-within:ring-zinc-400 bg-white">
+            <button className="bg-zinc-100 hover:bg-zinc-200 text-zinc-700 px-4 h-full text-sm font-medium border-r border-zinc-300 flex items-center gap-1.5 transition-colors">
               All 
               <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="currentColor" className="opacity-70 mt-0.5">
                 <path d="M7 10l5 5 5-5z" />
@@ -76,13 +76,13 @@ export function Navbar({ globalSearch = '', setGlobalSearch }: NavbarProps) {
             </button>
             <input 
               type="text" 
-              placeholder="Search Amazon.in"
+              placeholder="Search products..."
               value={globalSearch}
               onChange={(e) => setGlobalSearch && setGlobalSearch(e.target.value)}
-              className="flex-1 h-full px-3 text-[#111] placeholder:text-[#767676] focus:outline-none text-[15px]"
+              className="flex-1 h-full px-4 text-zinc-900 placeholder:text-zinc-400 focus:outline-none text-[15px]"
             />
-            <button className="bg-[#febd69] hover:bg-[#f3a847] w-11 h-full flex items-center justify-center transition-colors">
-              <Search className="h-[22px] w-[22px] text-[#333]" strokeWidth={2.5} />
+            <button className="bg-zinc-800 hover:bg-zinc-700 w-12 h-full flex items-center justify-center transition-colors">
+              <Search className="h-[20px] w-[20px] text-white" strokeWidth={2} />
             </button>
           </div>
 
@@ -99,8 +99,8 @@ export function Navbar({ globalSearch = '', setGlobalSearch }: NavbarProps) {
           {/* Cart */}
           <Link href="/cart" className="flex items-end hover:outline hover:outline-1 hover:outline-white p-1.5 rounded-sm cursor-pointer transition-all">
             <div className="relative">
-              <ShoppingCart className="h-8 w-8" />
-              <span className="absolute -top-1 left-3 text-[#f3a847] font-bold">
+              <ShoppingCart className="h-7 w-7 text-zinc-100" strokeWidth={1.8} />
+              <span className="absolute -top-1.5 -right-2 bg-blue-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border-2 border-zinc-950">
                 {cart.reduce((total, item) => total + item.quantity, 0)}
               </span>
             </div>
@@ -109,7 +109,7 @@ export function Navbar({ globalSearch = '', setGlobalSearch }: NavbarProps) {
         </div>
 
         {/* Bottom Navbar Row */}
-        <div className="bg-slate-800 px-8 py-2 flex items-center justify-between w-full text-sm font-medium overflow-x-auto whitespace-nowrap hide-scrollbar">
+        <div className="bg-zinc-900 px-8 py-2.5 flex items-center justify-between w-full text-sm font-medium text-zinc-300 overflow-x-auto whitespace-nowrap hide-scrollbar shadow-sm">
           <div 
             onClick={() => handleCategoryClick('')}
             className="flex items-center gap-1 hover:outline hover:outline-1 hover:outline-white p-1 rounded-sm cursor-pointer transition-all"
