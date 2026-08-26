@@ -159,7 +159,7 @@ CRITICAL RULES:
     addLog('Sending to Groq', 'INFO', 'Invoking Groq Llama 3.3 70B model...');
     
     let response = await groq.chat.completions.create({
-        model: 'llama-3.3-70b-versatile',
+        model: 'openai/gpt-oss-20b',
         messages: groqMessages,
         tools: tools,
         tool_choice: 'auto'
@@ -322,7 +322,7 @@ CRITICAL RULES:
       
       addLog('Sending Tool Results', 'INFO', 'Returning function execution results to Groq...');
       response = await groq.chat.completions.create({
-          model: 'llama-3.3-70b-versatile',
+          model: 'openai/gpt-oss-20b',
           messages: groqMessages,
           tools: tools,
           tool_choice: 'auto'
