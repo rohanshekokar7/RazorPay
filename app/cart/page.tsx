@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Package, Trash2, ArrowLeft, Loader2 } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import Script from 'next/script';
+import { getImageUrl } from '@/lib/getImageUrl';
 import { useState } from 'react';
 
 export default function CartPage() {
@@ -122,12 +123,11 @@ export default function CartPage() {
             <div className="flex flex-col gap-6">
               {cart.map((item) => (
                 <div key={item.id} className="flex gap-4 border-b border-gray-100 pb-6 last:border-0 last:pb-0">
-                  <div className="w-32 h-32 bg-gray-50 flex items-center justify-center rounded border border-gray-200 flex-shrink-0 overflow-hidden">
+                  <div className="w-full sm:w-48 h-48 sm:h-auto bg-gray-50 flex items-center justify-center border-b sm:border-b-0 sm:border-r border-gray-200">
                     <img 
-                      src={`https://picsum.photos/seed/${item.id}/400/300`} 
-                      alt={item.name} 
+                      src={getImageUrl(item.name, 400, 300)} 
                       className="w-full h-full object-cover" 
-                      loading="lazy"
+                      alt={item.name} 
                     />
                   </div>
                   <div className="flex-1 flex flex-col">

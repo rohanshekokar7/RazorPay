@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { Navbar } from '@/components/Navbar';
 import { CreditCard, Wallet, Building2, CheckCircle2, ChevronRight } from 'lucide-react';
 import Script from 'next/script';
+import { getImageUrl } from '@/lib/getImageUrl';
 
 export default function CheckoutPage() {
   const { cart, cartTotal, clearCart, updateQuantity } = useCart();
@@ -231,7 +232,7 @@ export default function CheckoutPage() {
                 <div key={item.id} className="p-4 flex flex-col sm:flex-row gap-6 border-b border-gray-100 last:border-b-0">
                   {/* Image */}
                   <div className="w-24 h-24 sm:w-32 sm:h-32 bg-gray-50 flex items-center justify-center border border-gray-200 flex-shrink-0">
-                    <img src={`https://picsum.photos/seed/${item.id}/200/200`} className="w-full h-full object-cover" alt={item.name} />
+                    <img src={getImageUrl(item.name, 200, 200)} className="w-full h-full object-cover" alt={item.name} />
                   </div>
                   
                   {/* Details */}
