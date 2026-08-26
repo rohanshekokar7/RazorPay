@@ -3,15 +3,96 @@
 import { useCart } from '@/context/CartContext';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Package, Trash2, ArrowLeft } from 'lucide-react';
+import { Package, Trash2, ArrowLeft, Loader2 } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
+import Script from 'next/script';
+import { useState } from 'react';
 
 export default function CartPage() {
   const router = useRouter();
   const { cart, removeFromCart, updateQuantity, cartTotal } = useCart();
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const handlePayment = async () => {
+    if (cart.length === 0) return;
+    setIsProcessing(true);
+
+    try {
+      // 1. Create order on the backend
+      const res = await fetch('/api/create-order', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ amount: cartTotal }),
+      });
+
+      const order = await res.json();
+
+      if (order.error) {
+        alert("Error creating order: " + order.error);
+        setIsProcessing(false);
+        return;
+      }
+
+      // 2. Initialize Razorpay Checkout
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID, // Use the key from env
+        amount: order.amount,
+        currency: order.currency,
+        name: "Buy BuDDY AI",
+        description: "Shopping Cart Checkout",
+        order_id: order.id,
+        handler: function (response: any) {
+          alert(`Payment successful! Payment ID: ${response.razorpay_payment_id}`);
+          // You can also verify the signature here by calling another backend route if needed
+          // After success, maybe clear the cart and redirect
+        },
+        prefill: {
+          name: typeof window !== 'undefined' ? localStorage.getItem('userName') || "" : "",
+        },
+        theme: {
+          color: "#0f172a"
+        },
+        config: {
+          display: {
+            blocks: {
+              qr: {
+                name: "Pay with QR Code",
+                instruments: [
+                  {
+                    method: "upi",
+                    flows: ["qr"]
+                  }
+                ]
+              }
+            },
+            sequence: ["block.qr"],
+            preferences: {
+              show_default_blocks: true
+            }
+          }
+        }
+      };
+
+      const rzp1 = new window.Razorpay(options);
+      
+      rzp1.on('payment.failed', function (response: any){
+        alert("Payment Failed: " + response.error.description);
+      });
+      
+      rzp1.open();
+    } catch (error) {
+      console.error("Payment initialization failed:", error);
+      alert("Failed to initialize payment.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
+      <Script src="https://checkout.razorpay.com/v1/checkout.js" />
       {/* Full Amazon Header */}
       <Navbar />
 
@@ -112,12 +193,12 @@ export default function CartPage() {
               </div>
               
               <button 
-                onClick={() => {
-                  router.push('/checkout');
-                }}
-                className="w-full py-2.5 bg-[#ffd814] hover:bg-[#f7ca00] text-gray-900 rounded-full font-medium shadow-sm transition-colors border border-[#FCD200] text-sm mb-3"
+                disabled={isProcessing}
+                onClick={handlePayment}
+                className="w-full py-2.5 bg-[#ffd814] hover:bg-[#f7ca00] disabled:bg-gray-300 disabled:text-gray-500 text-gray-900 rounded-full font-medium shadow-sm transition-colors border border-[#FCD200] disabled:border-gray-300 text-sm mb-3 flex items-center justify-center gap-2"
               >
-                Proceed to Buy
+                {isProcessing && <Loader2 className="h-4 w-4 animate-spin" />}
+                {isProcessing ? 'Processing...' : 'Proceed to Buy'}
               </button>
               
               <Link 
