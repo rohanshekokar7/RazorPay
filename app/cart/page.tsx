@@ -123,10 +123,10 @@ export default function CartPage() {
             <div className="flex flex-col gap-6">
               {cart.map((item) => (
                 <div key={item.id} className="flex gap-4 border-b border-gray-100 pb-6 last:border-0 last:pb-0">
-                  <div className="w-full sm:w-48 h-48 sm:h-auto bg-gray-50 flex items-center justify-center border-b sm:border-b-0 sm:border-r border-gray-200">
+                  <div className="w-full sm:w-48 h-48 sm:h-auto bg-white flex items-center justify-center border-b sm:border-b-0 sm:border-r border-gray-200">
                     <img 
                       src={item.imageUrl || getImageUrl(item.name, 400, 300)} 
-                      className="w-full h-full object-cover" 
+                      className="w-full h-full object-contain p-2" 
                       alt={item.name} 
                     />
                   </div>

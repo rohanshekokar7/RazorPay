@@ -66,11 +66,11 @@ export function ProductGrid({
       {selectedProduct && (
         <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col">
-            <div className="h-64 relative bg-gray-100">
+            <div className="h-64 relative bg-white">
               <img 
                 src={selectedProduct.imageUrl || getImageUrl(selectedProduct.name, 800, 600)} 
                 alt={selectedProduct.name} 
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain p-2"
               />
               <button 
                 onClick={() => setSelectedProduct(null)}
@@ -154,11 +154,11 @@ export function ProductGrid({
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {products.map((product) => (
               <div key={product.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-200 flex flex-col cursor-pointer" onClick={() => setSelectedProduct(product)}>
-                <div className="h-48 bg-gray-100 flex items-center justify-center border-b border-gray-100 overflow-hidden relative">
+                <div className="h-48 bg-white flex items-center justify-center border-b border-gray-100 overflow-hidden relative">
                    <img 
                       src={product.imageUrl || getImageUrl(product.name, 400, 300)} 
                       alt={product.name} 
-                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" 
+                      className="w-full h-full object-contain p-4 hover:scale-105 transition-transform duration-300" 
                       loading="lazy"
                    />
                 </div>
