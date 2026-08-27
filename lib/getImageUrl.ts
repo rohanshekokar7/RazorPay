@@ -18,7 +18,12 @@ export function getImageUrl(name: string, width: number = 400, height: number = 
     return `https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=${width}&h=${height}&fit=crop`;
   }
   if (keyword.includes('bag') || keyword.includes('purse') || keyword.includes('tote')) {
-    return `https://images.unsplash.com/photo-1584916201218-f4242ceb4809?w=${width}&h=${height}&fit=crop`;
+    return `https://images.unsplash.com/photo-1584916201218-f4242ceb4809?w=${width}
+
+  if (keyword.includes('shirt') || keyword.includes('top') || keyword.includes('dress') || keyword.includes('jean') || keyword.includes('clothing') || keyword.includes('apparel') || keyword.includes('jacket')) {
+    return `https://images.unsplash.com/photo-1489987707023-afc672b15749?w=${width}&h=${height}&fit=crop`;
+  }
+&h=${height}&fit=crop`;
   }
   if (keyword.includes('mug') || keyword.includes('cup') || keyword.includes('tea') || keyword.includes('coffee')) {
     return `https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?w=${width}&h=${height}&fit=crop`;

@@ -7,6 +7,7 @@ import { Package, Trash2, ArrowLeft, Loader2 } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import Script from 'next/script';
 import { getImageUrl } from '@/lib/getImageUrl';
+import { ProductImage } from '@/components/ProductImage';
 import { useState } from 'react';
 
 export default function CartPage() {
@@ -124,11 +125,10 @@ export default function CartPage() {
               {cart.map((item) => (
                 <div key={item.id} className="flex gap-4 border-b border-gray-100 pb-6 last:border-0 last:pb-0">
                   <div className="w-full sm:w-48 h-48 sm:h-auto bg-white flex items-center justify-center border-b sm:border-b-0 sm:border-r border-gray-200">
-                    <img 
-                      src={item.imageUrl || getImageUrl(item.name, 400, 300)} 
+                    <ProductImage 
+                      product={item} 
+                      width={400} height={300}
                       className="w-full h-full object-contain p-2" 
-                      alt={item.name} 
-                      onError={(e) => { e.currentTarget.src = getImageUrl(item.name, 400, 300); e.currentTarget.onerror = null; }}
                     />
                   </div>
                   <div className="flex-1 flex flex-col">

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search, ChevronLeft, ChevronRight, Package, Tag } from 'lucide-react';
 import { getImageUrl } from '@/lib/getImageUrl';
+import { ProductImage } from '@/components/ProductImage';
 import { useCart } from '@/context/CartContext';
 
 interface Product {
@@ -67,11 +68,10 @@ export function ProductGrid({
         <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col">
             <div className="h-64 relative bg-white">
-              <img 
-                src={selectedProduct.imageUrl || getImageUrl(selectedProduct.name, 800, 600)} 
-                alt={selectedProduct.name} 
+              <ProductImage 
+                product={selectedProduct} 
+                width={800} height={600}
                 className="w-full h-full object-contain p-2"
-                onError={(e) => { e.currentTarget.src = getImageUrl(selectedProduct.name, 800, 600); e.currentTarget.onerror = null; }}
               />
               <button 
                 onClick={() => setSelectedProduct(null)}
@@ -156,12 +156,10 @@ export function ProductGrid({
             {products.map((product) => (
               <div key={product.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-200 flex flex-col cursor-pointer" onClick={() => setSelectedProduct(product)}>
                 <div className="h-48 bg-white flex items-center justify-center border-b border-gray-100 overflow-hidden relative">
-                   <img 
-                      src={product.imageUrl || getImageUrl(product.name, 400, 300)} 
-                      alt={product.name} 
+                   <ProductImage 
+                      product={product} 
+                      width={400} height={300}
                       className="w-full h-full object-contain p-4 hover:scale-105 transition-transform duration-300" 
-                      loading="lazy"
-                      onError={(e) => { e.currentTarget.src = getImageUrl(product.name, 400, 300); e.currentTarget.onerror = null; }}
                    />
                 </div>
                 <div className="p-4 flex-1 flex flex-col">
