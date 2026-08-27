@@ -128,6 +128,7 @@ export default function CartPage() {
                       src={item.imageUrl || getImageUrl(item.name, 400, 300)} 
                       className="w-full h-full object-contain p-2" 
                       alt={item.name} 
+                      onError={(e) => { e.currentTarget.src = getImageUrl(item.name, 400, 300); e.currentTarget.onerror = null; }}
                     />
                   </div>
                   <div className="flex-1 flex flex-col">

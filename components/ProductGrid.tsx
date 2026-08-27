@@ -71,6 +71,7 @@ export function ProductGrid({
                 src={selectedProduct.imageUrl || getImageUrl(selectedProduct.name, 800, 600)} 
                 alt={selectedProduct.name} 
                 className="w-full h-full object-contain p-2"
+                onError={(e) => { e.currentTarget.src = getImageUrl(selectedProduct.name, 800, 600); e.currentTarget.onerror = null; }}
               />
               <button 
                 onClick={() => setSelectedProduct(null)}
@@ -160,6 +161,7 @@ export function ProductGrid({
                       alt={product.name} 
                       className="w-full h-full object-contain p-4 hover:scale-105 transition-transform duration-300" 
                       loading="lazy"
+                      onError={(e) => { e.currentTarget.src = getImageUrl(product.name, 400, 300); e.currentTarget.onerror = null; }}
                    />
                 </div>
                 <div className="p-4 flex-1 flex flex-col">
