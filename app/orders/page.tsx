@@ -95,7 +95,7 @@ export default function OrdersPage() {
                   </div>
                   <div className="flex flex-col">
                     <span className="uppercase text-xs font-semibold mb-0.5">Total</span>
-                    <span className="text-gray-900">${order.total.toFixed(2)}</span>
+                    <span className="text-gray-900">₹{order.total.toFixed(2)}</span>
                   </div>
                   <div className="flex flex-col">
                     <span className="uppercase text-xs font-semibold mb-0.5">Ship To</span>
@@ -127,7 +127,7 @@ export default function OrdersPage() {
                         {item.name}
                       </Link>
                       <p className="text-xs text-gray-500 mb-2">Sold by: {item.seller}</p>
-                      <p className="text-sm font-semibold mb-2">${item.price.toFixed(2)}</p>
+                      <p className="text-sm font-semibold mb-2">₹{item.price.toFixed(2)}</p>
                       
                       <div className="flex items-center gap-2 mb-3">
                         <button className="bg-yellow-400 hover:bg-yellow-500 border border-yellow-500 rounded-full px-4 py-1.5 text-sm font-medium shadow-sm transition-colors">

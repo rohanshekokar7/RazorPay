@@ -133,7 +133,7 @@ export default function CartPage() {
                   <div className="flex-1 flex flex-col">
                     <div className="flex justify-between items-start">
                       <h3 className="text-lg font-medium text-gray-900 leading-tight pr-4">{item.name}</h3>
-                      <p className="text-xl font-bold text-gray-900 whitespace-nowrap">${item.price.toFixed(2)}</p>
+                      <p className="text-xl font-bold text-gray-900 whitespace-nowrap">₹{item.price.toFixed(2)}</p>
                     </div>
                     <p className="text-sm text-green-600 mt-1">In Stock</p>
                     <p className="text-sm text-gray-500 mt-1 line-clamp-2">{item.description}</p>
@@ -171,7 +171,7 @@ export default function CartPage() {
           {cart.length > 0 && (
             <div className="mt-6 pt-4 border-t border-gray-200 text-right">
               <p className="text-lg font-medium text-gray-900">
-                Subtotal ({cart.reduce((acc, item) => acc + item.quantity, 0)} items): <span className="font-bold text-xl">${cartTotal.toFixed(2)}</span>
+                Subtotal ({cart.reduce((acc, item) => acc + item.quantity, 0)} items): <span className="font-bold text-xl">₹{cartTotal.toFixed(2)}</span>
               </p>
             </div>
           )}
@@ -183,7 +183,7 @@ export default function CartPage() {
             <div className="bg-white p-5 rounded shadow-sm border border-gray-200 sticky top-6">
               <div className="flex flex-col gap-2 mb-4">
                 <p className="text-lg text-gray-900">
-                  Subtotal ({cart.reduce((acc, item) => acc + item.quantity, 0)} items): <span className="font-bold text-xl">${cartTotal.toFixed(2)}</span>
+                  Subtotal ({cart.reduce((acc, item) => acc + item.quantity, 0)} items): <span className="font-bold text-xl">₹{cartTotal.toFixed(2)}</span>
                 </p>
                 <div className="flex items-start gap-2 mt-2">
                   <div className="mt-0.5 rounded-full bg-green-100 p-1 flex-shrink-0">

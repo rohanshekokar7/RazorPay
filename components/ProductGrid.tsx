@@ -82,7 +82,7 @@ export function ProductGrid({
             <div className="p-6 flex flex-col gap-4">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900 leading-tight">{selectedProduct.name}</h2>
-                <p className="text-2xl font-extrabold text-[#B12704] mt-2">${selectedProduct.price.toFixed(2)}</p>
+                <p className="text-2xl font-extrabold text-[#B12704] mt-2">₹{selectedProduct.price.toFixed(2)}</p>
               </div>
               <div className="prose prose-sm text-gray-600 max-h-40 overflow-y-auto pr-2">
                 <p>{selectedProduct.description !== 'No description available' ? selectedProduct.description : 'Detailed description not available for this item.'}</p>
@@ -91,7 +91,7 @@ export function ProductGrid({
                 <button 
                   onClick={() => {
                     if (onAskAi) {
-                      onAskAi(`I want to buy the ${selectedProduct.name} priced at $${selectedProduct.price.toFixed(2)}`);
+                      onAskAi(`I want to buy the ${selectedProduct.name} priced at ₹${selectedProduct.price.toFixed(2)}`);
                     }
                     setSelectedProduct(null);
                   }}
@@ -168,7 +168,7 @@ export function ProductGrid({
                     {product.description !== 'No description available' ? product.description : ''}
                   </p>
                   <div className="flex items-center justify-between mt-auto">
-                    <span className="text-lg font-bold text-gray-900">${product.price.toFixed(2)}</span>
+                    <span className="text-lg font-bold text-gray-900">₹{product.price.toFixed(2)}</span>
                     <button 
                        className="px-3 py-1.5 bg-blue-50 text-blue-600 text-sm font-medium rounded-lg hover:bg-blue-100 transition-colors"
                        onClick={(e) => {

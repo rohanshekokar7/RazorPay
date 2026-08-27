@@ -1,0 +1,75 @@
+const fs = require('fs');
+const csv = require('csv-parser');
+const { PrismaClient } = require('@prisma/client');
+
+const prisma = new PrismaClient();
+const CSV_FILE_PATH = '/Users/rohanpradipshekokar/Downloads/RazorPay/flipkart_com-ecommerce_sample.csv';
+const MAX_PRODUCTS = 500;
+
+async function main() {
+  console.log('Starting seed process...');
+  const results = [];
+
+  // Read CSV
+  await new Promise((resolve, reject) => {
+    fs.createReadStream(CSV_FILE_PATH)
+      .pipe(csv())
+      .on('data', (data) => {
+        if (results.length < MAX_PRODUCTS && data.product_name) {
+          results.push(data);
+        }
+      })
+      .on('end', resolve)
+      .on('error', reject);
+  });
+
+  console.log(`Parsed ${results.length} products from CSV. Clearing old products...`);
+
+  // Clear existing products
+  await prisma.product.deleteMany({});
+  console.log('Old products cleared.');
+
+  // Prepare product data for Prisma
+  const productsToInsert = results.map(row => {
+    // Parse price, default to 20 if missing, convert from INR to USD roughly (divide by 80)
+    let rawPrice = parseFloat(row.discounted_price) || parseFloat(row.retail_price);
+    if (isNaN(rawPrice) || rawPrice <= 0) rawPrice = 1600; // default 1600 INR = 20 USD
+    
+    // Ensure the price doesn't have too many decimals
+    const usdPrice = Math.max(1, Math.round((rawPrice / 80) * 100) / 100);
+
+    return {
+      name: row.product_name,
+      description: row.description || 'No description available',
+      price: usdPrice,
+      inStock: true
+    };
+  });
+
+  // Insert one by one to avoid SQLite createMany issues
+  let count = 0;
+  for (const product of productsToInsert) {
+    try {
+      await prisma.product.create({
+        data: product
+      });
+      count++;
+    } catch (err) {
+      console.warn(`Skipped product ${product.name} due to error`);
+    }
+  }
+
+  console.log(`Successfully seeded ${count} products into the database!`);
+}
+
+main()
+  .then(async () => {
+    await prisma.$disconnect();
+    process.exit(0);
+  })
+  .catch(async (e) => {
+    console.error("Error code:", e.code);
+    console.error("Error message (first 200 chars):", e.message.substring(0, 200));
+    await prisma.$disconnect();
+    process.exit(1);
+  });

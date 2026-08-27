@@ -241,7 +241,7 @@ export default function CheckoutPage() {
                     <p className="text-xs text-gray-500 mb-2">Seller: Amazon Retail</p>
                     
                     <div className="flex items-center gap-2 mb-4">
-                      <span className="text-xl font-bold text-gray-900">${item.price.toFixed(2)}</span>
+                      <span className="text-xl font-bold text-gray-900">₹{item.price.toFixed(2)}</span>
                     </div>
 
                     <div className="flex items-center gap-2 mt-auto">
@@ -284,30 +284,30 @@ export default function CheckoutPage() {
             <div className="p-4 flex flex-col gap-4 text-sm text-gray-800">
               <div className="flex justify-between items-center">
                 <span>Price ({cart.reduce((acc, item) => acc + item.quantity, 0)} items)</span>
-                <span>${cartTotal.toFixed(2)}</span>
+                <span>₹{cartTotal.toFixed(2)}</span>
               </div>
               
               <div className="flex justify-between items-center">
                 <span>Delivery Charges</span>
-                <span className="text-green-600">{shipping === 0 ? 'FREE' : `$${shipping.toFixed(2)}`}</span>
+                <span className="text-green-600">{shipping === 0 ? 'FREE' : `₹${shipping.toFixed(2)}`}</span>
               </div>
               
               <div className="flex justify-between items-center">
                 <span>Estimated Tax</span>
-                <span>${tax.toFixed(2)}</span>
+                <span>₹{tax.toFixed(2)}</span>
               </div>
               
               <div className="border-t border-dashed border-gray-300 my-1"></div>
               
               <div className="flex justify-between items-center font-bold text-gray-900 text-lg">
                 <span>Total Amount</span>
-                <span>${finalTotal.toFixed(2)}</span>
+                <span>₹{finalTotal.toFixed(2)}</span>
               </div>
               
               <div className="border-t border-dashed border-gray-300 my-1"></div>
 
               <div className="flex items-center gap-2 text-gray-600 text-sm">
-                <span className="font-bold text-gray-900">${finalTotal.toFixed(2)}</span>
+                <span className="font-bold text-gray-900">₹{finalTotal.toFixed(2)}</span>
                 <span className="text-gray-400 text-xs">ⓘ</span>
               </div>
               

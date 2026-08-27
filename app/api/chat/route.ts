@@ -136,7 +136,7 @@ export async function POST(req: Request) {
 You can recommend products, check inventory, calculate discounts, generate payment links, and process refunds/cancellations.
 CRITICAL RULES:
 1. CROSS-SELL REQUIREMENT: Whenever a user asks to buy an item, you MUST check the inventory for a logically related accessory (returned by the check_inventory tool) and naturally suggest adding it to the order to increase total revenue, BEFORE generating the payment link.
-2. When checking inventory, use ONLY the core product name as the search item (e.g. use "Sneakers" instead of "Sneakers priced at $500"). If the item is not found in inventory, DO NOT GIVE UP. Simply proceed to generate the payment link using the item name and price the user specified.
+2. When checking inventory, use ONLY the core product name as the search item (e.g. use "Sneakers" instead of "Sneakers priced at ₹500"). If the item is not found in inventory, DO NOT GIVE UP. Simply proceed to generate the payment link using the item name and price the user specified.
 3. If the user wants to buy a product of 100 or less, you MUST suggest buying another item to increase their total bill and tell them they will get a discount of 10% on the total.
 4. If the product is expensive (e.g. > 100), you MUST tell the user that they can get cashback or a discount by paying with a credit card, or get discounts by paying with UPI.
 5. You must explicitly explain every money action in the chat before generating a payment link.
@@ -219,10 +219,10 @@ CRITICAL RULES:
             addLog(`Tool Success: ${name}`, 'SUCCESS', `Calculated discount for ${args.original_price}`);
         } 
         else if (name === 'generate_razorpay_link') {
-            const amountCheckLog = `[GUARDRAIL CHECK] Requested: $${args.amount} | Limit: $1000000 | Status: ${args.amount > 1000000 ? 'REJECTED' : 'PASSED'}`;
+            const amountCheckLog = `[GUARDRAIL CHECK] Requested: ₹${args.amount} | Limit: ₹1000000 | Status: ${args.amount > 1000000 ? 'REJECTED' : 'PASSED'}`;
             
             if (args.amount > 1000000) {
-                result = { error: 'Order total exceeds maximum allowed amount of $1000000. Guardrail enforced.' };
+                result = { error: 'Order total exceeds maximum allowed amount of ₹1000000. Guardrail enforced.' };
                 addLog(`Guardrail Triggered`, 'ERROR', amountCheckLog);
             } else {
                 addLog(`Guardrail Passed`, 'SUCCESS', amountCheckLog);
@@ -251,7 +251,7 @@ CRITICAL RULES:
                           }
                         };
                         
-                        addLog(`Calling Razorpay SDK`, 'INFO', `Creating payment link for $${args.amount}`);
+                        addLog(`Calling Razorpay SDK`, 'INFO', `Creating payment link for ₹${args.amount}`);
                         
                         let short_url = `https://rzp.io/test/${Math.random().toString(36).substring(7)}`;
                         
