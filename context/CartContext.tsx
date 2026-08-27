@@ -5,9 +5,10 @@ import React, { createContext, useContext, useState, ReactNode } from 'react';
 export interface Product {
   id: string;
   name: string;
-  description: string | null;
   price: number;
+  description: string;
   inStock: boolean;
+  imageUrl?: string | null;
 }
 
 interface CartItem extends Product {

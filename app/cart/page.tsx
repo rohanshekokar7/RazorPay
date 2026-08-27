@@ -125,7 +125,7 @@ export default function CartPage() {
                 <div key={item.id} className="flex gap-4 border-b border-gray-100 pb-6 last:border-0 last:pb-0">
                   <div className="w-full sm:w-48 h-48 sm:h-auto bg-gray-50 flex items-center justify-center border-b sm:border-b-0 sm:border-r border-gray-200">
                     <img 
-                      src={getImageUrl(item.name, 400, 300)} 
+                      src={item.imageUrl || getImageUrl(item.name, 400, 300)} 
                       className="w-full h-full object-cover" 
                       alt={item.name} 
                     />

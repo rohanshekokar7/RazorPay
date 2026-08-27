@@ -35,14 +35,21 @@ async function main() {
     let rawPrice = parseFloat(row.discounted_price) || parseFloat(row.retail_price);
     if (isNaN(rawPrice) || rawPrice <= 0) rawPrice = 1600; // default 1600 INR = 20 USD
     
-    // Ensure the price doesn't have too many decimals
-    const usdPrice = Math.max(1, Math.round((rawPrice / 80) * 100) / 100);
+    // Extract the first image URL from the stringified array
+    let imageUrl = null;
+    if (row.image) {
+      const match = row.image.match(/http[^"']+/);
+      if (match) {
+        imageUrl = match[0];
+      }
+    }
 
     return {
       name: row.product_name,
       description: row.description || 'No description available',
-      price: usdPrice,
-      inStock: true
+      price: rawPrice, // Store the raw price directly
+      inStock: true,
+      imageUrl: imageUrl
     };
   });
 

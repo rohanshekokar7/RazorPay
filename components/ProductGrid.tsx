@@ -68,7 +68,7 @@ export function ProductGrid({
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col">
             <div className="h-64 relative bg-gray-100">
               <img 
-                src={getImageUrl(selectedProduct.name, 800, 600)} 
+                src={selectedProduct.imageUrl || getImageUrl(selectedProduct.name, 800, 600)} 
                 alt={selectedProduct.name} 
                 className="w-full h-full object-cover"
               />
@@ -156,7 +156,7 @@ export function ProductGrid({
               <div key={product.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-200 flex flex-col cursor-pointer" onClick={() => setSelectedProduct(product)}>
                 <div className="h-48 bg-gray-100 flex items-center justify-center border-b border-gray-100 overflow-hidden relative">
                    <img 
-                      src={getImageUrl(product.name, 400, 300)} 
+                      src={product.imageUrl || getImageUrl(product.name, 400, 300)} 
                       alt={product.name} 
                       className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" 
                       loading="lazy"
