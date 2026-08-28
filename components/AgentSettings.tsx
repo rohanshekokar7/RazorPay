@@ -5,6 +5,7 @@ import { ShieldCheck, CreditCard, CalendarClock, Bot, CheckCircle2, ChevronDown 
 import { useAgent } from '@/context/AgentContext';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
+import Script from 'next/script';
 
 const AVAILABLE_CATEGORIES = [
   'Footwear',
@@ -33,6 +34,7 @@ export function AgentSettings() {
   const [expiresAtDate, setExpiresAtDate] = useState<Date | null>(defaultDate);
   
   const [isSaved, setIsSaved] = useState(false);
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
 
   const [expirationPreset, setExpirationPreset] = useState<string>('custom');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -54,16 +56,69 @@ export function AgentSettings() {
 
 
 
-  const handleSave = () => {
-    updateMandate({
-      isActive: true,
-      maxLimit,
-      allowedCategories: [],
-      expiresAt: expiresAtDate ? expiresAtDate.toISOString().split('T')[0] : '',
-    });
+  const handleSave = async () => {
+    setIsAuthenticating(true);
     
-    setIsSaved(true);
-    setTimeout(() => setIsSaved(false), 3000);
+    try {
+      const res = await fetch('/api/create-mandate-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: 1 }), // ₹1 Verification Charge
+      });
+      
+      const data = await res.json();
+      
+      if (!res.ok || data.status !== 'success') {
+        alert('Failed to initialize mandate setup.');
+        setIsAuthenticating(false);
+        return;
+      }
+      
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID, // Use public key
+        amount: data.amount,
+        currency: data.currency,
+        name: "Agentic Mandate Setup",
+        description: "₹1 Verification Charge for AI Agent",
+        order_id: data.id,
+        image: "https://razorpay.com/favicon.png",
+        handler: function (response: any) {
+          if (response.razorpay_payment_id) {
+            updateMandate({
+              isActive: true,
+              maxLimit,
+              allowedCategories: [],
+              expiresAt: expiresAtDate ? expiresAtDate.toISOString().split('T')[0] : '',
+            });
+            setIsSaved(true);
+            setTimeout(() => setIsSaved(false), 3000);
+          }
+        },
+        prefill: {
+          name: "Admin User",
+          email: "admin@gmail.com",
+          contact: "9999999999"
+        },
+        theme: {
+          color: "#0891b2" // Cyan-600
+        }
+      };
+
+      // @ts-ignore
+      const rzp = new window.Razorpay(options);
+      
+      rzp.on('payment.failed', function (response: any){
+        alert(`Payment failed! Reason: ${response.error.description}`);
+      });
+      
+      rzp.open();
+      
+    } catch (err) {
+      console.error(err);
+      alert('Network error while setting up mandate.');
+    } finally {
+      setIsAuthenticating(false);
+    }
   };
 
   const handleRevoke = () => {
@@ -77,6 +132,7 @@ export function AgentSettings() {
 
   return (
     <div className="bg-white flex flex-col h-full w-full">
+      <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
       <div className="bg-zinc-900 px-6 py-4 border-b border-zinc-800 flex items-center gap-3">
         <div className="h-10 w-10 rounded-full bg-cyan-900/30 flex items-center justify-center text-cyan-400 border border-cyan-800">
           <ShieldCheck className="h-5 w-5" />
@@ -216,19 +272,20 @@ export function AgentSettings() {
         )}
         <button 
           onClick={handleSave}
+          disabled={isAuthenticating}
           className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
             isSaved 
               ? 'bg-green-600 text-white hover:bg-green-700' 
-              : 'bg-zinc-900 text-white hover:bg-zinc-800'
+              : 'bg-zinc-900 text-white hover:bg-zinc-800 disabled:opacity-70'
           }`}
         >
-          {isSaved ? (
+          {isAuthenticating ? 'Processing...' : isSaved ? (
             <>
               <CheckCircle2 className="h-4 w-4" />
               Mandate Authorized
             </>
           ) : (
-            'Authorize Agent'
+            'Authorize Agent (₹1)'
           )}
         </button>
       </div>
