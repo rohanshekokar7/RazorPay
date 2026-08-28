@@ -21,7 +21,7 @@ export function getImageUrl(name: string, width: number = 400, height: number = 
     return `https://images.unsplash.com/photo-1584916201218-f4242ceb4809?w=${width}&h=${height}&fit=crop`;
   }
 
-  if (keyword.includes('shirt') || keyword.includes('top') || keyword.includes('dress') || keyword.includes('jean') || keyword.includes('clothing') || keyword.includes('apparel') || keyword.includes('jacket')) {
+  if (keyword.includes('shirt') || keyword.includes('top') || keyword.includes('dress') || keyword.includes('jean') || keyword.includes('clothing') || keyword.includes('apparel') || keyword.includes('jacket') || keyword.includes('kurta')) {
     return `https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=${width}&h=${height}&fit=crop`;
   }
   if (keyword.includes('mug') || keyword.includes('cup') || keyword.includes('tea') || keyword.includes('coffee')) {
@@ -52,16 +52,10 @@ export function getImageUrl(name: string, width: number = 400, height: number = 
   // A curated list of beautiful lifestyle/product photography from Unsplash to act as fallbacks
   const genericImages = [
     "1505691938895-1758d7feb511", // minimal setup
-    "1528255671579-01b9e182d597", // aesthetic objects
-    "1618365908648-e71bc12cb8eb", // interior details
     "1513694203232-719a280e022f", // cozy home
-    "1585336261022-6a07ac9f6a4a", // lifestyle accessories
     "1600607686527-6fb886090705", // decor
-    "1523688601146-2d9751d6c8e0", // aesthetic desk
     "1544816155-12df9643f363", // jewelry/accessories
-    "1507679622140-d66838a3d312", // fashion/accessories
     "1520333789090-1afc82db536a", // home vibes
-    "1615705354519-75f850787cb0", // ceramics
     "1596443686812-2f45229eebc3"  // minimal interior
   ];
 

@@ -284,6 +284,8 @@ export function AgentSettings() {
               <CheckCircle2 className="h-4 w-4" />
               Mandate Authorized
             </>
+          ) : mandate.isActive ? (
+            'Update Mandate (₹1)'
           ) : (
             'Authorize Agent (₹1)'
           )}
