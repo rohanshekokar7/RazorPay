@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Settings2, X, ShieldAlert, BadgeCheck, Loader2 } from 'lucide-react';
+import { Send, Bot, User, Settings2, X, ShieldAlert, BadgeCheck, Loader2, MessageSquarePlus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -378,6 +378,21 @@ export function ChatInterface({ onLogsReceived, simulatePaymentTick = 0, externa
               <span className="text-xs font-bold text-white">₹{mandate.maxLimit.toFixed(2)}</span>
             </div>
           )}
+          <button 
+            onClick={() => {
+              localStorage.removeItem('chat_messages');
+              setMessages([{ 
+                id: '1', 
+                role: 'model', 
+                text: "Hello! I'm your AI Shopping Assistant. How can I help you today?" 
+              }]);
+              if (onLogsReceived) onLogsReceived([]);
+            }} 
+            className="p-2 text-gray-700 hover:text-black hover:bg-gray-200 rounded-full transition"
+            title="Start New Chat"
+          >
+            <MessageSquarePlus className="w-5 h-5" strokeWidth={2.5} />
+          </button>
           <button 
             onClick={() => setShowSettings(true)} 
             className="p-2 text-gray-700 hover:text-black hover:bg-gray-200 rounded-full transition"
