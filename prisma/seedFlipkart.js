@@ -43,13 +43,26 @@ async function main() {
         imageUrl = match[0];
       }
     }
+    // Extract the category
+    let category = null;
+    if (row.product_category_tree) {
+      // Data looks like '["Clothing >> Women\'s Clothing >> Lingerie ..."]'
+      const match = row.product_category_tree.match(/\["([^>"]+)>>/);
+      if (match) {
+        category = match[1].trim();
+      } else {
+        const match2 = row.product_category_tree.match(/\["([^"]+)"\]/);
+        if (match2) category = match2[1].trim();
+      }
+    }
 
     return {
       name: row.product_name,
       description: row.description || 'No description available',
       price: rawPrice, // Store the raw price directly
       inStock: true,
-      imageUrl: imageUrl
+      imageUrl: imageUrl,
+      category: category
     };
   });
 

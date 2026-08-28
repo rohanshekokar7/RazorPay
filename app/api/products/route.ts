@@ -5,19 +5,26 @@ const prisma = new PrismaClient();
 
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
+    const searchParams = new URL(request.url).searchParams;
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '50');
     const search = searchParams.get('search') || '';
+    const category = searchParams.get('category') || '';
 
     const skip = (page - 1) * limit;
 
-    const where = search ? {
-      OR: [
+    const where: any = {};
+    
+    if (search) {
+      where.OR = [
         { name: { contains: search } },
         { description: { contains: search } }
-      ]
-    } : {};
+      ];
+    }
+
+    if (category) {
+      where.category = { equals: category };
+    }
 
     const [products, total] = await Promise.all([
       prisma.product.findMany({

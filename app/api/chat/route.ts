@@ -10,6 +10,7 @@ const razorpay = new Razorpay({
 });
 
 import { PrismaClient } from '@prisma/client';
+import { getImageUrl } from '@/lib/getImageUrl';
 
 const prisma = new PrismaClient();
 
@@ -107,6 +108,23 @@ const tools: Groq.Chat.Completions.ChatCompletionTool[] = [
         required: ['payment_id', 'amount'],
       },
     }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'show_product_image',
+      description: 'Shows the image of a product to the user in the chat interface. Call this when the user asks to see an image of a product.',
+      parameters: {
+        type: 'object',
+        properties: {
+          product_name: {
+            type: 'string',
+            description: 'The name of the product to show.',
+          },
+        },
+        required: ['product_name'],
+      },
+    }
   }
 ];
 
@@ -117,6 +135,7 @@ export async function POST(req: Request) {
 
     let auditLogs: Array<{ id: string, timestamp: string, step: string, status: "INFO" | "SUCCESS" | "ERROR", details: string }> = [];
     let paymentLink: { url: string, amount: number, title: string } | null = null;
+    let imageUrl: string | null = null;
     let finalReply = "";
 
     const addLog = (step: string, status: "INFO" | "SUCCESS" | "ERROR", details: string) => {
@@ -143,7 +162,8 @@ CRITICAL RULES:
 6. If a "Payment Success Webhook" message is received, thank the user and confirm their order is being shipped.
 7. ORDER CANCELLATIONS: If a user asks to cancel an order or return an item, you MUST first ask them for their reason for cancellation. DO NOT proceed with the cancellation or use the 'process_refund' tool until they have provided a reason. Once they provide a reason, use the 'lookup_order' tool to find it, and then use the 'process_refund' tool to issue their refund via Razorpay. Explain to the user that the refund will reflect in 5-7 days.
 8. TWO-STEP CHECKOUT: When a user asks about a product, ONLY search the inventory and present the product details. DO NOT generate a payment link yet. You must wait for the user to explicitly confirm they want to buy it (e.g., "I want to buy this", "send me the link") BEFORE you generate the payment link.
-9. Use the provided tools to perform these actions.`;
+9. If the user asks to see an image or picture of a product, you MUST use the show_product_image tool.
+10. Use the provided tools to perform these actions.`;
 
     // Map the incoming UI messages to Groq format
     const groqMessages: Groq.Chat.Completions.ChatCompletionMessageParam[] = messages.map((m: any) => ({
@@ -312,6 +332,11 @@ CRITICAL RULES:
                 addLog(`Razorpay SDK Error`, 'ERROR', error.message || 'Unknown error');
                 result = { error: `Razorpay Error: ${error.message}` };
             }
+        } else if (name === 'show_product_image') {
+            addLog(`Calling show_product_image`, 'INFO', `Fetching image for ${args.product_name}`);
+            imageUrl = getImageUrl(args.product_name, 400, 300);
+            result = { success: true, message: `Image for ${args.product_name} will be displayed to the user.` };
+            addLog(`Tool Success: ${name}`, 'SUCCESS', `Image ready for ${args.product_name}`);
         } else {
             result = { error: 'Unknown function' };
         }
@@ -343,6 +368,7 @@ CRITICAL RULES:
     return NextResponse.json({
         reply: finalReply,
         paymentLink,
+        imageUrl,
         auditLogs
     });
 

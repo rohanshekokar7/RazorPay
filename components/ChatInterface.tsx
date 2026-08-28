@@ -11,6 +11,7 @@ interface Message {
   role: 'user' | 'model';
   text: string;
   paymentLink?: { url: string; amount: number; title: string } | null;
+  imageUrl?: string | null;
 }
 
 interface ChatInterfaceProps {
@@ -77,7 +78,8 @@ export function ChatInterface({ onLogsReceived, simulatePaymentTick = 0, externa
         id: (Date.now() + 1).toString(),
         role: 'model',
         text: data.reply,
-        paymentLink: data.paymentLink
+        paymentLink: data.paymentLink,
+        imageUrl: data.imageUrl
       };
 
       // Note: We don't add the hidden system message to the UI state
@@ -131,7 +133,8 @@ export function ChatInterface({ onLogsReceived, simulatePaymentTick = 0, externa
         id: (Date.now() + 1).toString(),
         role: 'model',
         text: data.reply,
-        paymentLink: data.paymentLink
+        paymentLink: data.paymentLink,
+        imageUrl: data.imageUrl
       };
 
       setMessages(prev => [...prev, modelMsg]);
@@ -199,6 +202,13 @@ export function ChatInterface({ onLogsReceived, simulatePaymentTick = 0, externa
                     url={msg.paymentLink.url} 
                     amount={msg.paymentLink.amount} 
                     title={msg.paymentLink.title} 
+                  />
+                )}
+                {msg.imageUrl && (
+                  <img 
+                    src={msg.imageUrl} 
+                    alt="Product" 
+                    className="mt-3 rounded-lg max-w-[250px] w-full object-cover shadow-sm border border-gray-100" 
                   />
                 )}
               </div>

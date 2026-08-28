@@ -16,12 +16,14 @@ interface Product {
 }
 
 interface ProductGridProps {
-  searchQuery: string;
+  searchQuery?: string;
+  activeCategory?: string;
   onAskAi?: (text: string) => void;
 }
 
 export function ProductGrid({ 
-  searchQuery, 
+  searchQuery = '', 
+  activeCategory = '',
   onAskAi 
 }: ProductGridProps) {
   const { cart, addToCart } = useCart();
@@ -30,7 +32,7 @@ export function ProductGrid({
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState(searchQuery);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   // Debounce search from prop
@@ -42,14 +44,19 @@ export function ProductGrid({
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
+  // Reset to page 1 on category change
+  useEffect(() => {
+    setPage(1);
+  }, [activeCategory]);
+
   useEffect(() => {
     fetchProducts();
-  }, [page, debouncedSearch]);
+  }, [page, debouncedSearch, activeCategory]);
 
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/products?page=${page}&limit=24&search=${encodeURIComponent(debouncedSearch)}`);
+      const res = await fetch(`/api/products?page=${page}&limit=24&search=${encodeURIComponent(debouncedSearch)}&category=${encodeURIComponent(activeCategory)}`);
       const data = await res.json();
       setProducts(data.products || []);
       setTotalPages(data.pagination?.totalPages || 1);
@@ -187,11 +194,8 @@ export function ProductGrid({
       </div>
 
       {/* Pagination */}
-      <div className="p-4 border-t border-gray-100 bg-white flex items-center justify-between">
-        <p className="text-sm text-gray-500">
-          Page <span className="font-medium text-gray-900">{page}</span> of <span className="font-medium text-gray-900">{totalPages}</span>
-        </p>
-        <div className="flex gap-2">
+      <div className="p-4 border-t border-gray-100 bg-white flex items-center justify-center">
+        <div className="flex gap-2 items-center">
           <button
             onClick={() => setPage(p => Math.max(1, p - 1))}
             disabled={page === 1 || loading}
@@ -199,6 +203,62 @@ export function ProductGrid({
           >
             <ChevronLeft className="h-4 w-4 text-gray-600" />
           </button>
+          
+          {(() => {
+            const pages: (number | string)[] = [];
+            if (totalPages <= 7) {
+              for (let i = 1; i <= totalPages; i++) {
+                pages.push(i);
+              }
+            } else {
+              pages.push(1);
+              let start = Math.max(2, page - 2);
+              let end = Math.min(totalPages - 1, page + 2);
+              
+              if (page <= 3) {
+                end = Math.min(totalPages - 1, 5);
+              }
+              if (page >= totalPages - 2) {
+                start = Math.max(2, totalPages - 4);
+              }
+              
+              if (start > 2) {
+                pages.push('...');
+              }
+              
+              for (let i = start; i <= end; i++) {
+                pages.push(i);
+              }
+              
+              if (end < totalPages - 1) {
+                pages.push('...');
+              }
+              
+              if (totalPages > 1) {
+                pages.push(totalPages);
+              }
+            }
+            
+            return pages.map((p, index) => (
+              p === '...' ? (
+                <span key={`ellipsis-${index}`} className="px-2 text-gray-500">...</span>
+              ) : (
+                <button
+                  key={p}
+                  onClick={() => setPage(p as number)}
+                  disabled={loading}
+                  className={`w-9 h-9 flex items-center justify-center rounded-lg text-sm font-medium transition-colors ${
+                    page === p 
+                      ? 'bg-blue-600 text-white border border-blue-600' 
+                      : 'border border-gray-200 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  {p}
+                </button>
+              )
+            ));
+          })()}
+
           <button
             onClick={() => setPage(p => Math.min(totalPages, p + 1))}
             disabled={page === totalPages || loading}

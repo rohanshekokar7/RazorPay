@@ -9,9 +9,11 @@ import { useRouter } from 'next/navigation';
 interface NavbarProps {
   globalSearch?: string;
   setGlobalSearch?: (val: string) => void;
+  activeCategory?: string;
+  setActiveCategory?: (val: string) => void;
 }
 
-export function Navbar({ globalSearch = '', setGlobalSearch }: NavbarProps) {
+export function Navbar({ globalSearch = '', setGlobalSearch, activeCategory = '', setActiveCategory }: NavbarProps) {
   const router = useRouter();
   const { cart } = useCart();
   const [userName, setUserName] = useState<string | null>(null);
@@ -21,11 +23,17 @@ export function Navbar({ globalSearch = '', setGlobalSearch }: NavbarProps) {
   const [tempLocation, setTempLocation] = useState('');
 
   const handleCategoryClick = (category: string) => {
-    if (setGlobalSearch) {
-      setGlobalSearch(category);
+    if (setActiveCategory && setGlobalSearch) {
+      setActiveCategory(category);
+      setGlobalSearch(''); // Clear global search when a category is clicked
     } else {
-      router.push(`/?q=${encodeURIComponent(category)}`);
+      router.push(`/?c=${encodeURIComponent(category)}`);
     }
+  };
+
+  const handleSearchChange = (val: string) => {
+    if (setGlobalSearch) setGlobalSearch(val);
+    if (setActiveCategory) setActiveCategory(''); // Clear active category when typing search
   };
 
   useEffect(() => {
@@ -116,7 +124,7 @@ export function Navbar({ globalSearch = '', setGlobalSearch }: NavbarProps) {
               type="text" 
               placeholder="Search products..."
               value={globalSearch}
-              onChange={(e) => setGlobalSearch && setGlobalSearch(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               className="flex-1 h-full px-4 text-zinc-100 bg-transparent placeholder:text-zinc-500 focus:outline-none text-[15px]"
             />
             <button className="bg-cyan-500 hover:bg-cyan-400 w-12 h-full flex items-center justify-center transition-colors">
@@ -150,22 +158,20 @@ export function Navbar({ globalSearch = '', setGlobalSearch }: NavbarProps) {
         <div className="bg-zinc-900 px-8 py-2.5 flex items-center justify-between w-full text-sm font-medium text-zinc-300 overflow-x-auto whitespace-nowrap hide-scrollbar shadow-sm">
           <div 
             onClick={() => handleCategoryClick('')}
-            className="flex items-center gap-1 hover:outline hover:outline-1 hover:outline-white p-1 rounded-sm cursor-pointer transition-all"
+            className={`flex items-center gap-1 hover:outline hover:outline-1 hover:outline-white p-1 rounded-sm cursor-pointer transition-all ${!activeCategory ? 'text-cyan-400 font-bold' : ''}`}
           >
             <Menu className="h-5 w-5" />
             <span>All</span>
           </div>
-          <span onClick={() => handleCategoryClick('Bestsellers')} className="hover:outline hover:outline-1 hover:outline-white p-1 rounded-sm cursor-pointer transition-all">Bestsellers</span>
-          <span onClick={() => handleCategoryClick("Today's Deals")} className="hover:outline hover:outline-1 hover:outline-white p-1 rounded-sm cursor-pointer transition-all">Today's Deals</span>
-          <span onClick={() => handleCategoryClick('Customer Service')} className="hover:outline hover:outline-1 hover:outline-white p-1 rounded-sm cursor-pointer transition-all">Customer Service</span>
-          <span onClick={() => handleCategoryClick('Mobiles')} className="hover:outline hover:outline-1 hover:outline-white p-1 rounded-sm cursor-pointer transition-all">Mobiles</span>
-          <span onClick={() => handleCategoryClick('New Releases')} className="hover:outline hover:outline-1 hover:outline-white p-1 rounded-sm cursor-pointer transition-all">New Releases</span>
-
-          <span onClick={() => handleCategoryClick('Electronics')} className="hover:outline hover:outline-1 hover:outline-white p-1 rounded-sm cursor-pointer transition-all">Electronics</span>
-          <span onClick={() => handleCategoryClick('Home & Kitchen')} className="hover:outline hover:outline-1 hover:outline-white p-1 rounded-sm cursor-pointer transition-all">Home & Kitchen</span>
-          <span onClick={() => handleCategoryClick('Fashion')} className="hover:outline hover:outline-1 hover:outline-white p-1 rounded-sm cursor-pointer transition-all">Fashion</span>
-          <span onClick={() => handleCategoryClick('Computers')} className="hover:outline hover:outline-1 hover:outline-white p-1 rounded-sm cursor-pointer transition-all">Computers</span>
-          <span onClick={() => handleCategoryClick('Beauty')} className="hover:outline hover:outline-1 hover:outline-white p-1 rounded-sm cursor-pointer transition-all">Beauty & Personal Care</span>
+          {['Footwear', 'Clothing', 'Watches', 'Jewellery', 'Sports & Fitness', 'Home Furnishing', 'Pens & Stationery', 'Bags, Wallets & Belts'].map(cat => (
+            <span 
+              key={cat}
+              onClick={() => handleCategoryClick(cat)} 
+              className={`hover:outline hover:outline-1 hover:outline-white p-1 rounded-sm cursor-pointer transition-all ${activeCategory === cat ? 'text-cyan-400 font-bold' : ''}`}
+            >
+              {cat}
+            </span>
+          ))}
         </div>
       </header>
 
