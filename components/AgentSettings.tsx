@@ -37,6 +37,24 @@ export function AgentSettings() {
   
   const [isSaved, setIsSaved] = useState(false);
 
+  const [expirationPreset, setExpirationPreset] = useState<string>('custom');
+
+  const handlePresetChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    setExpirationPreset(val);
+    if (val === 'custom') return;
+    
+    const newDate = new Date();
+    if (val === '1_day') newDate.setDate(newDate.getDate() + 1);
+    if (val === '1_week') newDate.setDate(newDate.getDate() + 7);
+    if (val === '1_month') newDate.setMonth(newDate.getMonth() + 1);
+    if (val === '6_months') newDate.setMonth(newDate.getMonth() + 6);
+    if (val === '1_year') newDate.setFullYear(newDate.getFullYear() + 1);
+    
+    setExpiresAtDate(newDate);
+  };
+
+
   const toggleCategory = (cat: string) => {
     setSelectedCategories(prev => 
       prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]
@@ -124,15 +142,37 @@ export function AgentSettings() {
             <CalendarClock className="h-4 w-4 text-gray-500" />
             Mandate Expiration Date
           </label>
-          <div className="relative">
-            <DatePicker 
-              selected={expiresAtDate} 
-              onChange={(date: Date | null) => setExpiresAtDate(date)} 
-              dateFormat="dd/MM/yyyy"
-              minDate={new Date()}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all outline-none"
-              wrapperClassName="w-full"
-            />
+          <div className="flex gap-2">
+            <select
+              value={expirationPreset}
+              onChange={handlePresetChange}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 bg-white"
+            >
+              <option value="1_day">1 Day</option>
+              <option value="1_week">1 Week</option>
+              <option value="1_month">1 Month</option>
+              <option value="6_months">6 Months</option>
+              <option value="1_year">1 Year</option>
+              <option value="custom">Custom Date</option>
+            </select>
+
+            {expirationPreset === 'custom' && (
+              <div className="relative flex-1">
+                <DatePicker 
+                  selected={expiresAtDate} 
+                  onChange={(date: Date | null) => setExpiresAtDate(date)} 
+                  dateFormat="dd/MM/yyyy"
+                  minDate={new Date()}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all outline-none"
+                  wrapperClassName="w-full"
+                />
+              </div>
+            )}
+            {expirationPreset !== 'custom' && expiresAtDate && (
+              <div className="flex-1 px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-700 flex items-center text-sm">
+                Valid until {expiresAtDate.toLocaleDateString()}
+              </div>
+            )}
           </div>
         </div>
       </div>
