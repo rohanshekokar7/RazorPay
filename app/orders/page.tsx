@@ -13,7 +13,7 @@ export default async function OrdersPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <Navbar globalSearch="" setGlobalSearch={() => {}} />
+      <Navbar />
       
       <main className="flex-1 w-full max-w-5xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-6">
