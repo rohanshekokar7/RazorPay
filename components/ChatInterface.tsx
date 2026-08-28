@@ -17,6 +17,7 @@ interface Message {
   paymentLink?: { url: string; amount: number; title: string } | null;
   imageUrl?: string | null;
   isStepUp?: boolean;
+  approvalRequest?: { item: string; amount: number; category: string } | null;
 }
 
 interface ChatInterfaceProps {
@@ -104,7 +105,8 @@ export function ChatInterface({ onLogsReceived, simulatePaymentTick = 0, externa
         role: 'model',
         text: data.reply,
         paymentLink: data.paymentLink,
-        imageUrl: data.imageUrl
+        imageUrl: data.imageUrl,
+        approvalRequest: data.approvalRequest
       };
 
       setMessages(prev => [...prev, modelMsg]);
@@ -138,118 +140,6 @@ export function ChatInterface({ onLogsReceived, simulatePaymentTick = 0, externa
       onLogsReceived([{ timestamp: new Date().toISOString(), level: 'INFO', message: `[Intent Captured] User requested: "${textToSend}"` } as any]);
     }
 
-    if (mandate.isActive) {
-      // --- AUTONOMOUS AGENT LOGIC ---
-      try {
-        let amount = 300;
-        let category = 'Groceries';
-        let itemId = 'prod_generic';
-        let itemName = 'Generic Item';
-        
-        if (textToSend.toLowerCase().includes('coffee')) {
-          amount = 450; category = 'Groceries'; itemId = 'prod_coffee_01'; itemName = 'Artisan 250g Coffee Beans';
-        } else if (textToSend.toLowerCase().includes('laptop') || textToSend.toLowerCase().includes('expensive')) {
-          amount = 80000; category = 'Electronics'; itemId = 'prod_laptop_01'; itemName = 'ProBook Ultra 14"';
-        } else if (textToSend.toLowerCase().includes('phone') || textToSend.toLowerCase().includes('mobile')) {
-          amount = 50000; category = 'Electronics'; itemId = 'prod_phone_01'; itemName = 'Smartphone X1';
-        } else if (textToSend.toLowerCase().includes('condom')) {
-          amount = 300; category = 'Health & Wellness'; itemId = 'prod_condom_01'; itemName = 'Health Item';
-        }
-
-        if (onLogsReceived) {
-          onLogsReceived([{ timestamp: new Date().toISOString(), level: 'INFO', message: `[Bounded Check] Requesting autonomous checkout for ₹${amount} in category '${category}'` } as any]);
-        }
-
-        const currentCart = [{ product_id: itemId, name: itemName, price: amount }];
-
-        const res = await fetch('/api/agent-checkout', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            amount,
-            category,
-            itemName,
-            mandate: {
-              isActive: mandate.isActive,
-              maxLimit: mandate.maxLimit,
-              allowedCategories: mandate.allowedCategories,
-            }
-          })
-        });
-
-        const data = await res.json();
-
-        if (res.ok && data.status === 'success') {
-           if (onLogsReceived) onLogsReceived([{ timestamp: new Date().toISOString(), level: 'SUCCESS', message: `[Bounded Check Passed] ₹${amount}/₹${mandate.maxLimit} used -> [Gated] Token generated.` } as any]);
-           
-           deductFromLimit(amount);
-           setMessages(prev => [...prev, { 
-            id: Date.now().toString(), 
-            role: 'system', 
-            text: `✅ Autonomous Payment Successful. ₹${amount} deducted from mandate limit.` 
-          }]);
-
-          try {
-            const orchestratorResponse = await fetch('/api/agent/orchestrator', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ intent: textToSend, currentCart, userContext: {} })
-            });
-            const orchestratorData = await orchestratorResponse.json();
-
-            let agentReply = `All done! I've placed the order for ${itemName} successfully using my delegated mandate. `;
-
-            if (orchestratorData?.orchestrator_decision?.should_intervene) {
-              const instructions = orchestratorData.orchestrator_decision.instructions[0];
-              agentReply += `\n\n${instructions.system_prompt}`;
-            }
-
-            setMessages(prev => [...prev, { 
-              id: (Date.now() + 1).toString(), 
-              role: 'model', 
-              text: agentReply 
-            }]);
-          } catch (e) {
-            setMessages(prev => [...prev, { 
-              id: (Date.now() + 1).toString(), 
-              role: 'model', 
-              text: `All done! I've placed the order for ${itemName} successfully using my delegated mandate.` 
-            }]);
-          }
-
-        } else if (res.status === 403 && data.requiresStepUp) {
-          if (onLogsReceived) onLogsReceived([{ timestamp: new Date().toISOString(), level: 'ERROR', message: `ERR_LIMIT_EXCEEDED: ${data.message}` } as any]);
-          setPendingTx({ amount, category, itemName });
-          setMessages(prev => [...prev, { 
-            id: Date.now().toString(), 
-            role: 'system', 
-            text: `⚠️ Step-up Authentication Required` 
-          }]);
-          setMessages(prev => [...prev, { 
-            id: (Date.now() + 1).toString(), 
-            role: 'model', 
-            text: `I couldn't process this autonomously because: ${data.message}. Please manually approve this transaction to proceed.`,
-            isStepUp: true
-          }]);
-        } else {
-           setMessages(prev => [...prev, { 
-            id: Date.now().toString(), 
-            role: 'system', 
-            text: `❌ Transaction Failed: ${data.message || 'Unknown error'}` 
-          }]);
-        }
-      } catch (error) {
-        setMessages(prev => [...prev, { 
-          id: Date.now().toString(), 
-          role: 'system', 
-          text: "❌ Network error trying to reach the agent checkout API." 
-        }]);
-      } finally {
-        setIsLoading(false);
-      }
-      return;
-    }
-
     // --- STANDARD GEMINI LOGIC ---
     try {
       const apiMessages = messages.filter(m => m.role !== 'system').map(m => ({ role: m.role, parts: [{ text: m.text }] }));
@@ -274,7 +164,8 @@ export function ChatInterface({ onLogsReceived, simulatePaymentTick = 0, externa
         role: 'model',
         text: data.reply,
         paymentLink: data.paymentLink,
-        imageUrl: data.imageUrl
+        imageUrl: data.imageUrl,
+        approvalRequest: data.approvalRequest
       };
 
       setMessages(prev => [...prev, modelMsg]);
@@ -345,6 +236,95 @@ export function ChatInterface({ onLogsReceived, simulatePaymentTick = 0, externa
       setIsLoading(false);
       setPendingTx(null);
     }
+  };
+
+  const handleApprovePurchase = async (req: { item: string, amount: number, category: string }, messageId: string) => {
+    // Remove the approval buttons to prevent multiple clicks
+    setMessages(prev => prev.map(m => m.id === messageId ? { ...m, approvalRequest: null } : m));
+    
+    if (mandate.isActive) {
+      setIsLoading(true);
+      if (onLogsReceived) {
+        onLogsReceived([{ timestamp: new Date().toISOString(), level: 'INFO', message: `[User Approved] Initiating autonomous checkout for ₹${req.amount}` } as any]);
+      }
+
+      try {
+        const res = await fetch('/api/agent-checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            amount: req.amount,
+            category: req.category,
+            itemName: req.item,
+            mandate: {
+              isActive: mandate.isActive,
+              maxLimit: mandate.maxLimit,
+              allowedCategories: mandate.allowedCategories,
+            }
+          })
+        });
+
+        const data = await res.json();
+
+        if (res.ok && data.status === 'success') {
+           if (onLogsReceived) onLogsReceived([{ timestamp: new Date().toISOString(), level: 'SUCCESS', message: `[Bounded Check Passed] ₹${req.amount} used -> [Gated] Token generated.` } as any]);
+           
+           deductFromLimit(req.amount);
+           setMessages(prev => [...prev, { 
+            id: Date.now().toString(), 
+            role: 'system', 
+            text: `✅ Autonomous Payment Successful. ₹${req.amount} deducted from mandate limit.` 
+          }]);
+          
+          setMessages(prev => [...prev, { 
+            id: (Date.now() + 1).toString(), 
+            role: 'model', 
+            text: `All done! I've placed the order for ${req.item} successfully using my delegated mandate.` 
+          }]);
+        } else if (res.status === 403 && data.requiresStepUp) {
+          if (onLogsReceived) onLogsReceived([{ timestamp: new Date().toISOString(), level: 'ERROR', message: `ERR_LIMIT_EXCEEDED: ${data.message}` } as any]);
+          setPendingTx({ amount: req.amount, category: req.category, itemName: req.item });
+          setMessages(prev => [...prev, { 
+            id: Date.now().toString(), 
+            role: 'system', 
+            text: `⚠️ Step-up Authentication Required` 
+          }]);
+          setMessages(prev => [...prev, { 
+            id: (Date.now() + 1).toString(), 
+            role: 'model', 
+            text: `I couldn't process this autonomously because: ${data.message}. Please manually approve this transaction to proceed.`,
+            isStepUp: true
+          }]);
+        } else {
+           setMessages(prev => [...prev, { 
+            id: Date.now().toString(), 
+            role: 'system', 
+            text: `❌ Transaction Failed: ${data.message || 'Unknown error'}` 
+          }]);
+        }
+      } catch (error) {
+        setMessages(prev => [...prev, { 
+          id: Date.now().toString(), 
+          role: 'system', 
+          text: "❌ Network error trying to reach the agent checkout API." 
+        }]);
+      } finally {
+        setIsLoading(false);
+      }
+    } else {
+      // If no mandate is active, tell the LLM the user approved so it generates the link.
+      handleHiddenSystemMessage(`SYSTEM: The user explicitly approved the purchase of ${req.item}. Please generate the payment link using the generate_razorpay_link tool.`);
+    }
+  };
+
+  const handleCancelPurchase = (messageId: string) => {
+    setMessages(prev => prev.map(m => m.id === messageId ? { ...m, approvalRequest: null } : m));
+    setMessages(prev => [...prev, { 
+      id: Date.now().toString(), 
+      role: 'user', 
+      text: "I cancelled the purchase." 
+    }]);
+    handleHiddenSystemMessage("SYSTEM: The user cancelled the purchase approval.");
   };
 
   return (
@@ -479,14 +459,36 @@ export function ChatInterface({ onLogsReceived, simulatePaymentTick = 0, externa
                       title={msg.paymentLink.title} 
                     />
                   )}
-                  {msg.imageUrl && (
-                    <img 
-                      src={msg.imageUrl} 
-                      alt="Product" 
-                      className="mt-3 rounded-lg max-w-[250px] w-full object-cover shadow-sm border border-gray-100" 
-                    />
-                  )}
-                </div>
+                    {msg.imageUrl && (
+                      <img 
+                        src={msg.imageUrl} 
+                        alt="Product" 
+                        className="mt-3 rounded-lg max-w-[250px] w-full object-cover shadow-sm border border-gray-100" 
+                      />
+                    )}
+                    {msg.approvalRequest && (
+                      <div className="mt-4 p-4 bg-white border border-gray-200 rounded-lg shadow-sm w-full min-w-[250px]">
+                        <div className="font-semibold text-gray-800 mb-1">Confirm Purchase</div>
+                        <div className="text-sm text-gray-600 mb-4">
+                          Would you like to buy <strong>{msg.approvalRequest.item}</strong> for <strong>₹{msg.approvalRequest.amount}</strong>?
+                        </div>
+                        <div className="flex gap-2">
+                          <button 
+                            onClick={() => handleCancelPurchase(msg.id)}
+                            className="flex-1 py-1.5 px-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-md transition-colors text-sm"
+                          >
+                            Cancel
+                          </button>
+                          <button 
+                            onClick={() => handleApprovePurchase(msg.approvalRequest!, msg.id)}
+                            className="flex-1 py-1.5 px-3 bg-cyan-600 hover:bg-cyan-700 text-white font-medium rounded-md transition-colors shadow-sm text-sm"
+                          >
+                            Approve
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
               )}
             </motion.div>
           ))}

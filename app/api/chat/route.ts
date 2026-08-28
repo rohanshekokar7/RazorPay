@@ -50,8 +50,33 @@ const tools: Groq.Chat.Completions.ChatCompletionTool[] = [
   {
     type: 'function',
     function: {
+      name: 'request_purchase_approval',
+      description: 'Asks the user for explicit approval to purchase an item. Call this when the user is ready to buy an item and has confirmed which item they want.',
+      parameters: {
+        type: 'object',
+        properties: {
+          item: {
+            type: 'string',
+            description: 'The exact name of the item to purchase.',
+          },
+          amount: {
+            type: 'number',
+            description: 'The price of the item.',
+          },
+          category: {
+            type: 'string',
+            description: 'The category of the item (e.g. Groceries, Electronics, Fashion).',
+          }
+        },
+        required: ['item', 'amount', 'category'],
+      },
+    }
+  },
+  {
+    type: 'function',
+    function: {
       name: 'generate_razorpay_link',
-      description: 'Generates a payment link for a specific item (or combined items) and amount. Call this when the user is ready to purchase.',
+      description: 'Generates a payment link for a specific item (or combined items) and amount. Call this only when the user explicitly asks for a payment link after approval.',
       parameters: {
         type: 'object',
         properties: {
@@ -133,6 +158,7 @@ export async function POST(req: Request) {
     let auditLogs: Array<{ id: string, timestamp: string, step: string, status: "INFO" | "SUCCESS" | "ERROR", details: string }> = [];
     let paymentLink: { url: string, amount: number, title: string } | null = null;
     let imageUrl: string | null = null;
+    let approvalRequest: { item: string, amount: number, category: string } | null = null;
     let finalReply = "";
 
     const addLog = (step: string, status: "INFO" | "SUCCESS" | "ERROR", details: string) => {
@@ -152,15 +178,16 @@ export async function POST(req: Request) {
 You can recommend products, check inventory, calculate discounts, generate payment links, and process refunds/cancellations.
 CRITICAL RULES:
 1. CROSS-SELL REQUIREMENT: Whenever a user asks to buy an item, you MUST check the inventory for a logically related accessory (returned by the check_inventory tool) and naturally suggest adding it to the order to increase total revenue, BEFORE generating the payment link.
-2. When checking inventory, use ONLY the core product name as the search item (e.g. use "Sneakers" instead of "Sneakers priced at ₹500"). If the item is not found in inventory, DO NOT GIVE UP. Simply proceed to generate the payment link using the item name and price the user specified.
+2. When checking inventory, use ONLY the core product name as the search item (e.g. use "Sneakers" instead of "Sneakers priced at ₹500"). If the item is not found in inventory, DO NOT GIVE UP. Simply proceed using the item name and price the user specified.
 3. If the user wants to buy a product of 100 or less, you MUST suggest buying another item to increase their total bill and tell them they will get a discount of 10% on the total.
 4. If the product is expensive (e.g. > 100), you MUST tell the user that they can get cashback or a discount by paying with a credit card, or get discounts by paying with UPI.
-5. You must explicitly explain every money action in the chat before generating a payment link.
+5. You must explicitly explain every money action in the chat.
 6. If a "Payment Success Webhook" message is received, thank the user and confirm their order is being shipped.
 7. ORDER CANCELLATIONS: If a user asks to cancel an order or return an item, you MUST first ask them for their reason for cancellation. DO NOT proceed with the cancellation or use the 'process_refund' tool until they have provided a reason. Once they provide a reason, use the 'lookup_order' tool to find it, and then use the 'process_refund' tool to issue their refund via Razorpay. Explain to the user that the refund will reflect in 5-7 days.
-8. TWO-STEP CHECKOUT: When a user asks about a product, ONLY search the inventory and present the product details. DO NOT generate a payment link yet. You must wait for the user to explicitly confirm they want to buy it (e.g., "I want to buy this", "send me the link") BEFORE you generate the payment link.
-9. If the user asks to see an image or picture of a product, you MUST use the show_product_image tool.
-10. Use the provided tools to perform these actions.`;
+8. TWO-STEP CHECKOUT: When a user asks to buy something, if it is ambiguous (e.g., multiple items match), FIRST use check_inventory and ask the user WHICH SPECIFIC ITEM they want to buy. Wait for their answer.
+9. ONCE THE USER CONFIRMS the exact item they want to buy, DO NOT GENERATE A PAYMENT LINK. You MUST call the 'request_purchase_approval' tool to ask the user for explicit UI confirmation.
+10. If the user asks to see an image or picture of a product, you MUST use the show_product_image tool.
+11. Use the provided tools to perform these actions.`;
 
     // Map the incoming UI messages to Groq format
     const groqMessages: Groq.Chat.Completions.ChatCompletionMessageParam[] = messages.map((m: any) => ({
@@ -235,6 +262,11 @@ CRITICAL RULES:
             result = { discounted_price: args.original_price * 0.9, discount_percentage: 10 };
             addLog(`Tool Success: ${name}`, 'SUCCESS', `Calculated discount for ${args.original_price}`);
         } 
+        else if (name === 'request_purchase_approval') {
+            approvalRequest = { item: args.item, amount: args.amount, category: args.category };
+            result = { success: true, message: `Approval card will be shown to the user for ${args.item}. Wait for their response.` };
+            addLog(`Tool Success: ${name}`, 'SUCCESS', `Requested UI approval for ${args.item} at ₹${args.amount}`);
+        }
         else if (name === 'generate_razorpay_link') {
             const amountCheckLog = `[GUARDRAIL CHECK] Requested: ₹${args.amount} | Limit: ₹1000000 | Status: ${args.amount > 1000000 ? 'REJECTED' : 'PASSED'}`;
             
@@ -365,6 +397,7 @@ CRITICAL RULES:
         reply: finalReply,
         paymentLink,
         imageUrl,
+        approvalRequest,
         auditLogs
     });
 
