@@ -402,7 +402,7 @@ export function ChatInterface({ onLogsReceived, simulatePaymentTick = 0, externa
                 className="bg-white w-full max-w-md max-h-[90%] overflow-hidden rounded-xl shadow-xl flex flex-col relative"
              >
                 <div className="absolute top-3 right-3 z-10">
-                  <button onClick={() => setShowSettings(false)} className="p-1.5 bg-zinc-800/10 hover:bg-zinc-800/20 text-zinc-800 rounded-full transition">
+                  <button onClick={() => setShowSettings(false)} className="p-1.5 bg-white/10 hover:bg-white/20 text-zinc-400 hover:text-white rounded-full transition">
                     <X className="w-5 h-5" />
                   </button>
                 </div>
