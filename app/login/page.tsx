@@ -133,10 +133,9 @@ export default function LoginPage() {
           alert('Invalid admin credentials!');
           return;
         }
-      } else if (email) {
-        const displayName = email.split('@')[0];
-        localStorage.setItem('userName', displayName);
-        router.push('/');
+      } else {
+        alert('Invalid email or password!');
+        return;
       }
     } else {
       // Handle Signup
