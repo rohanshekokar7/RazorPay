@@ -143,6 +143,10 @@ const tools: Groq.Chat.Completions.ChatCompletionTool[] = [
             type: 'string',
             description: 'The name of the product to show.',
           },
+          image_url: {
+            type: 'string',
+            description: 'The exact image URL of the product, obtained from the inventory check.'
+          }
         },
         required: ['product_name'],
       },
@@ -368,14 +372,19 @@ CRITICAL RULES:
         } else if (name === 'show_product_image') {
             addLog(`Calling show_product_image`, 'INFO', `Fetching image for ${args.product_name}`);
             
-            const productMatch = await prisma.product.findFirst({
-                where: { name: { contains: args.product_name } }
-            });
-            
-            if (productMatch && productMatch.imageUrl) {
-                imageUrl = productMatch.imageUrl;
+            if (args.image_url) {
+                imageUrl = args.image_url;
             } else {
-                imageUrl = getImageUrl(args.product_name, 400, 300);
+                const baseName = args.product_name.split(/[-–]/)[0].trim();
+                const productMatch = await prisma.product.findFirst({
+                    where: { name: { contains: baseName } }
+                });
+                
+                if (productMatch && productMatch.imageUrl) {
+                    imageUrl = productMatch.imageUrl;
+                } else {
+                    imageUrl = getImageUrl(args.product_name, 400, 300);
+                }
             }
             
             result = { success: true, message: `Image for ${args.product_name} will be displayed to the user.` };
