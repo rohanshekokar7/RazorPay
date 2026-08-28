@@ -27,6 +27,7 @@ export function AgentChat({ onLog }: AgentChatProps) {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [pendingTx, setPendingTx] = useState<{ amount: number, category: string, itemName: string } | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
   // Helper to safely log to the Audit Trail if the prop was passed
@@ -68,6 +69,11 @@ export function AgentChat({ onLog }: AgentChatProps) {
         category = 'Electronics';
         itemId = 'prod_laptop_01';
         itemName = 'ProBook Ultra 14"';
+      } else if (userText.toLowerCase().includes('phone') || userText.toLowerCase().includes('mobile')) {
+        amount = 50000;
+        category = 'Electronics';
+        itemId = 'prod_phone_01';
+        itemName = 'Smartphone X1';
       } else if (userText.toLowerCase().includes('condom')) {
         amount = 300;
         category = 'Health & Wellness';
@@ -141,6 +147,7 @@ export function AgentChat({ onLog }: AgentChatProps) {
       } else if (res.status === 403 && data.requiresStepUp) {
         // Graceful Failure
         logEvent('ERROR', `ERR_LIMIT_EXCEEDED: ${data.message}`);
+        setPendingTx({ amount, category, itemName });
         setMessages(prev => [...prev, { 
           id: Date.now().toString(), 
           role: 'system', 
@@ -172,15 +179,52 @@ export function AgentChat({ onLog }: AgentChatProps) {
     }
   };
 
-  const handleApproveOverage = () => {
+  const handleApproveOverage = async () => {
+    if (!pendingTx) return;
+
+    setIsLoading(true);
     logEvent('SUCCESS', `[User Authorized] Step-up authentication completed by user via MFA/Biometrics.`);
-    logEvent('SUCCESS', `[Gated] Token manually generated. Transaction processed.`);
     
-    setMessages(prev => [...prev, { 
-      id: Date.now().toString(), 
-      role: 'agent', 
-      text: `Thank you! I have verified your approval and processed the overage transaction successfully.` 
-    }]);
+    try {
+      const res = await fetch('/api/agent-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: pendingTx.amount,
+          category: pendingTx.category,
+          itemName: pendingTx.itemName,
+          bypassMandate: true,
+          mandate: {
+            isActive: mandate.isActive,
+            maxLimit: mandate.maxLimit,
+            allowedCategories: mandate.allowedCategories,
+          }
+        })
+      });
+
+      const data = await res.json();
+      
+      if (res.ok && data.status === 'success') {
+        logEvent('SUCCESS', `[Gated] Token manually generated. Transaction processed.`);
+        setMessages(prev => [...prev, { 
+          id: Date.now().toString(), 
+          role: 'agent', 
+          text: `Thank you! I have verified your approval and processed the overage transaction successfully.` 
+        }]);
+      } else {
+        logEvent('ERROR', `[Transaction Failed] ${data.message || 'Unknown error'}`);
+        setMessages(prev => [...prev, { 
+          id: Date.now().toString(), 
+          role: 'system', 
+          text: `❌ Override Transaction Failed: ${data.message || 'Unknown error'}` 
+        }]);
+      }
+    } catch (e) {
+      logEvent('ERROR', `[System Error] Network error trying to reach APIs.`);
+    } finally {
+      setIsLoading(false);
+      setPendingTx(null);
+    }
   };
 
   return (

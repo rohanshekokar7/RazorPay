@@ -6,10 +6,10 @@ const prisma = new PrismaClient();
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { amount, category, mandate, itemName } = body;
+    const { amount, category, mandate, itemName, bypassMandate } = body;
 
     // Validate the presence of the mandate
-    if (!mandate || !mandate.isActive) {
+    if (!bypassMandate && (!mandate || !mandate.isActive)) {
       return NextResponse.json(
         { 
           status: 'failed', 
@@ -20,41 +20,43 @@ export async function POST(request: Request) {
       );
     }
 
-    // Check expiration (Simulated checking)
-    if (mandate.expiresAt && new Date(mandate.expiresAt) < new Date()) {
-      return NextResponse.json(
-        { 
-          status: 'failed', 
-          requiresStepUp: true, 
-          message: 'The delegated mandate has expired.' 
-        }, 
-        { status: 403 }
-      );
-    }
-
-    // Check transaction limit
-    if (amount > mandate.maxLimit) {
-      return NextResponse.json(
-        { 
-          status: 'failed', 
-          requiresStepUp: true, 
-          message: `Amount ₹${amount} exceeds your active mandate limit of ₹${mandate.maxLimit}.` 
-        }, 
-        { status: 403 }
-      );
-    }
-
-    // Check allowed categories
-    if (mandate.allowedCategories && mandate.allowedCategories.length > 0) {
-      if (!mandate.allowedCategories.includes(category)) {
+    if (!bypassMandate) {
+      // Check expiration (Simulated checking)
+      if (mandate.expiresAt && new Date(mandate.expiresAt) < new Date()) {
         return NextResponse.json(
           { 
             status: 'failed', 
             requiresStepUp: true, 
-            message: `Purchases in the '${category}' category are not authorized by your mandate.` 
+            message: 'The delegated mandate has expired.' 
           }, 
           { status: 403 }
         );
+      }
+
+      // Check transaction limit
+      if (amount > mandate.maxLimit) {
+        return NextResponse.json(
+          { 
+            status: 'failed', 
+            requiresStepUp: true, 
+            message: `Amount ₹${amount} exceeds your active mandate limit of ₹${mandate.maxLimit}.` 
+          }, 
+          { status: 403 }
+        );
+      }
+
+      // Check allowed categories
+      if (mandate.allowedCategories && mandate.allowedCategories.length > 0) {
+        if (!mandate.allowedCategories.includes(category)) {
+          return NextResponse.json(
+            { 
+              status: 'failed', 
+              requiresStepUp: true, 
+              message: `Purchases in the '${category}' category are not authorized by your mandate.` 
+            }, 
+            { status: 403 }
+          );
+        }
       }
     }
 
