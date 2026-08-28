@@ -9,6 +9,7 @@ import { PaymentLink } from './PaymentLink';
 import { AuditLog } from './AuditTrailConsole';
 import { useAgent } from '@/context/AgentContext';
 import { AgentSettings } from './AgentSettings';
+import { getImageUrl } from '@/lib/getImageUrl';
 
 interface Message {
   id: string;
@@ -437,12 +438,18 @@ export function ChatInterface({ onLogsReceived, simulatePaymentTick = 0, externa
                             ul: ({node, ...props}) => <ul className="list-disc pl-5 mb-2" {...props} />,
                             ol: ({node, ...props}) => <ol className="list-decimal pl-5 mb-2" {...props} />,
                             li: ({node, ...props}) => <li className="mb-1" {...props} />,
-                            img: ({node, ...props}) => (
-                              <img 
-                                className="rounded-lg max-w-[250px] w-full object-cover shadow-sm border border-gray-100 my-3 block" 
-                                {...props} 
-                              />
-                            )
+                            img: ({node, alt, src, ...props}) => {
+                              // Always use getImageUrl to guarantee a valid image, ignoring hallucinated paths
+                              const finalSrc = getImageUrl(alt && alt !== 'Product' ? alt : "Product", 400, 300);
+                              return (
+                                <img 
+                                  className="rounded-lg max-w-[250px] w-full object-cover shadow-sm border border-gray-100 my-3 block" 
+                                  src={finalSrc}
+                                  alt={alt || "Product Image"}
+                                  {...props} 
+                                />
+                              );
+                            }
                           }}
                         >
                           {msg.text}
