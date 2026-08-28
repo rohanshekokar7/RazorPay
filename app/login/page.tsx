@@ -124,7 +124,16 @@ export default function LoginPage() {
     
     if (isLogin) {
       // Handle Login
-      if (email) {
+      if (email === 'admin@gmail.com') {
+        if (password === 'Admin@123') {
+          localStorage.setItem('userName', 'Admin');
+          localStorage.setItem('isAdmin', 'true');
+          router.push('/');
+        } else {
+          alert('Invalid admin credentials!');
+          return;
+        }
+      } else if (email) {
         const displayName = email.split('@')[0];
         localStorage.setItem('userName', displayName);
         router.push('/');
