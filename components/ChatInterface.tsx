@@ -399,7 +399,7 @@ export function ChatInterface({ onLogsReceived, simulatePaymentTick = 0, externa
                 initial={{ scale: 0.95, y: 10 }} 
                 animate={{ scale: 1, y: 0 }} 
                 exit={{ scale: 0.95, y: 10 }} 
-                className="bg-white w-full max-w-md max-h-[90%] overflow-hidden rounded-xl shadow-2xl border-[6px] border-zinc-200 flex flex-col relative"
+                className="bg-white w-full max-w-md max-h-[90%] overflow-hidden rounded-none shadow-2xl border-2 border-cyan-500 flex flex-col relative"
              >
                 <div className="absolute top-3 right-3 z-10">
                   <button onClick={() => setShowSettings(false)} className="p-1.5 bg-white/10 hover:bg-white/20 text-zinc-400 hover:text-white rounded-full transition">
