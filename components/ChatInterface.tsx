@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Settings, X, ShieldAlert, BadgeCheck, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { PaymentLink } from './PaymentLink';
 import { AuditLog } from './AuditTrailConsole';
 import { useAgent } from '@/context/AgentContext';
@@ -434,7 +436,25 @@ export function ChatInterface({ onLogsReceived, simulatePaymentTick = 0, externa
                       ? 'bg-blue-600 text-white rounded-tr-sm' 
                       : 'bg-white text-gray-800 border border-gray-100 rounded-tl-sm'
                   }`}>
-                    <p className="whitespace-pre-wrap text-sm leading-relaxed">{msg.text}</p>
+                    {msg.role === 'user' ? (
+                      <p className="whitespace-pre-wrap text-sm leading-relaxed">{msg.text}</p>
+                    ) : (
+                      <ReactMarkdown 
+                        remarkPlugins={[remarkGfm]}
+                        className="text-sm leading-relaxed overflow-x-auto"
+                        components={{
+                          table: ({node, ...props}) => <table className="w-full text-left border-collapse my-2 min-w-full" {...props} />,
+                          th: ({node, ...props}) => <th className="border-b-2 border-gray-200 py-2 px-3 font-semibold text-gray-700 bg-gray-50" {...props} />,
+                          td: ({node, ...props}) => <td className="border-b border-gray-100 py-2 px-3" {...props} />,
+                          p: ({node, ...props}) => <p className="mb-2 last:mb-0 whitespace-pre-wrap" {...props} />,
+                          ul: ({node, ...props}) => <ul className="list-disc pl-5 mb-2" {...props} />,
+                          ol: ({node, ...props}) => <ol className="list-decimal pl-5 mb-2" {...props} />,
+                          li: ({node, ...props}) => <li className="mb-1" {...props} />
+                        }}
+                      >
+                        {msg.text}
+                      </ReactMarkdown>
+                    )}
                     
                     {msg.isStepUp && (
                       <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
