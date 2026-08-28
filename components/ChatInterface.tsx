@@ -393,20 +393,20 @@ export function ChatInterface({ onLogsReceived, simulatePaymentTick = 0, externa
             initial={{ opacity: 0 }} 
             animate={{ opacity: 1 }} 
             exit={{ opacity: 0 }} 
-            className="absolute inset-0 z-50 bg-black/40 flex items-center justify-center p-4 backdrop-blur-sm"
+            className="absolute inset-0 z-50 bg-black/40 flex items-center justify-center p-4 backdrop-blur-md"
           >
              <motion.div 
                 initial={{ scale: 0.95, y: 10 }} 
                 animate={{ scale: 1, y: 0 }} 
                 exit={{ scale: 0.95, y: 10 }} 
-                className="bg-white w-full max-w-md max-h-[90%] overflow-hidden rounded-none shadow-2xl border-2 border-cyan-500 flex flex-col relative"
+                className="bg-white w-full max-w-md rounded-none shadow-2xl border-2 border-cyan-500 flex flex-col relative"
              >
                 <div className="absolute top-3 right-3 z-10">
                   <button onClick={() => setShowSettings(false)} className="p-1.5 bg-white/10 hover:bg-white/20 text-zinc-400 hover:text-white rounded-full transition">
                     <X className="w-5 h-5" />
                   </button>
                 </div>
-                <div className="flex-1 overflow-y-auto">
+                <div className="flex-1">
                   <AgentSettings />
                 </div>
              </motion.div>
