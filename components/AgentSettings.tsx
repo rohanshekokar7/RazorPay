@@ -84,7 +84,7 @@ export function AgentSettings() {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col h-full">
+    <div className="bg-white flex flex-col h-full w-full">
       <div className="bg-zinc-900 px-6 py-4 border-b border-zinc-800 flex items-center gap-3">
         <div className="h-10 w-10 rounded-full bg-cyan-900/30 flex items-center justify-center text-cyan-400 border border-cyan-800">
           <ShieldCheck className="h-5 w-5" />
