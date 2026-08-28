@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Settings, X, ShieldAlert, BadgeCheck, Loader2 } from 'lucide-react';
+import { Send, Bot, User, Settings2, X, ShieldAlert, BadgeCheck, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -379,10 +379,10 @@ export function ChatInterface({ onLogsReceived, simulatePaymentTick = 0, externa
           )}
           <button 
             onClick={() => setShowSettings(true)} 
-            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full transition"
+            className="p-2 text-gray-700 hover:text-black hover:bg-gray-200 rounded-full transition"
             title="Agent Settings"
           >
-            <Settings className="w-5 h-5" />
+            <Settings2 className="w-5 h-5" strokeWidth={2.5} />
           </button>
         </div>
       </div>
@@ -399,7 +399,7 @@ export function ChatInterface({ onLogsReceived, simulatePaymentTick = 0, externa
                 initial={{ scale: 0.95, y: 10 }} 
                 animate={{ scale: 1, y: 0 }} 
                 exit={{ scale: 0.95, y: 10 }} 
-                className="bg-white w-full max-w-md max-h-[90%] overflow-hidden rounded-xl shadow-xl flex flex-col relative"
+                className="bg-white w-full max-w-md max-h-[90%] overflow-hidden rounded-xl shadow-2xl border-[6px] border-zinc-200 flex flex-col relative"
              >
                 <div className="absolute top-3 right-3 z-10">
                   <button onClick={() => setShowSettings(false)} className="p-1.5 bg-white/10 hover:bg-white/20 text-zinc-400 hover:text-white rounded-full transition">
