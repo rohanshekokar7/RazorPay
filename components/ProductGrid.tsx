@@ -122,7 +122,7 @@ export function ProductGrid({
                   ) : (
                     <button 
                       onClick={() => {
-                        addToCart(selectedProduct);
+                        addToCart({ ...selectedProduct, description: selectedProduct.description || undefined });
                       }}
                       className="px-4 py-2 bg-[#ffd814] hover:bg-[#f7ca00] text-gray-900 rounded-full font-medium shadow-sm transition-colors border border-[#FCD200] text-sm"
                     >
@@ -131,7 +131,7 @@ export function ProductGrid({
                   )}
                   <button 
                     onClick={() => {
-                      addToCart(selectedProduct);
+                      addToCart({ ...selectedProduct, description: selectedProduct.description || undefined });
                       setSelectedProduct(null);
                       router.push('/checkout');
                     }}

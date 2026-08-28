@@ -127,7 +127,7 @@ export function AgentSettings() {
           <div className="relative">
             <DatePicker 
               selected={expiresAtDate} 
-              onChange={(date) => setExpiresAtDate(date)} 
+              onChange={(date: Date | null) => setExpiresAtDate(date)} 
               dateFormat="dd/MM/yyyy"
               minDate={new Date()}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all outline-none"

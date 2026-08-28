@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
 import Razorpay from 'razorpay';
 import prisma from '@/lib/prisma';
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'mock_key_id',
+  key_secret: process.env.RAZORPAY_KEY_SECRET || 'mock_key_secret',
+});
+
 
 // Allowed tokens for agents
 const ALLOWED_AGENT_TOKENS = ['test_agent_token_123'];
