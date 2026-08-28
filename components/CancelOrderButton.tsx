@@ -47,9 +47,9 @@ export function CancelOrderButton({ orderId, orderDate }: { orderId: string, ord
     <button
       onClick={handleCancel}
       disabled={isCancelling}
-      className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-red-700 bg-red-100 hover:bg-red-200 rounded-md transition-colors disabled:opacity-50"
+      className="w-full justify-center inline-flex items-center px-3 py-1.5 text-sm font-medium text-red-700 bg-white border border-red-200 hover:bg-red-50 rounded-full shadow-sm transition-colors disabled:opacity-50"
     >
-      {isCancelling ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <XCircle className="w-4 h-4 mr-1" />}
+      {isCancelling ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : null}
       Cancel Order
     </button>
   );

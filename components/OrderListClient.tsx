@@ -23,33 +23,8 @@ export function OrderListClient({ orders }: { orders: any[] }) {
       <div className="flex flex-col gap-6">
         {orders.map((order) => (
           <div key={order.id} className="border border-gray-200 rounded-lg bg-white overflow-hidden shadow-sm p-5">
-            <div className="flex flex-wrap gap-y-2 justify-between text-sm text-gray-500 border-b border-gray-100 pb-4 mb-4">
-              <div className="flex gap-8">
-                <div className="flex flex-col">
-                  <span className="uppercase text-xs font-semibold mb-0.5">Order Placed</span>
-                  <span className="text-gray-900">{new Date(order.orderDate).toLocaleDateString()}</span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="uppercase text-xs font-semibold mb-0.5">Total</span>
-                  <span className="text-gray-900">₹{order.amount.toFixed(2)}</span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="uppercase text-xs font-semibold mb-0.5">Ship To</span>
-                  <span className="text-blue-600 hover:underline cursor-pointer hover:text-orange-700">Agentic Shopper ▾</span>
-                </div>
-              </div>
-              <div className="flex flex-col items-end">
-                <span className="uppercase text-xs font-semibold mb-0.5">Order # {order.id.substring(0, 8).toUpperCase()}</span>
-                <div className="flex gap-2">
-                  <button onClick={() => setSelectedProduct(order)} className="text-blue-600 hover:underline hover:text-orange-700">View order details</button>
-                  <span className="text-gray-300">|</span>
-                  <a href="#" className="text-blue-600 hover:underline hover:text-orange-700">Invoice</a>
-                </div>
-              </div>
-            </div>
-            
             <div>
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-100">
                 <h3 className={`text-lg font-bold ${order.status === 'Delivered' ? 'text-gray-900' : order.status === 'Cancelled' ? 'text-red-700' : 'text-green-700'}`}>
                   {order.status === 'Cancelled' 
                     ? 'Cancelled' 
@@ -60,7 +35,7 @@ export function OrderListClient({ orders }: { orders: any[] }) {
                 </h3>
               </div>
               
-              <div className="flex flex-col sm:flex-row gap-6 mb-4">
+              <div className="flex flex-col sm:flex-row gap-6">
                 <div className="w-24 h-24 bg-gray-50 border border-gray-100 rounded-md flex items-center justify-center shrink-0 overflow-hidden">
                   <img 
                     src={getImageUrl(order.itemName, 96, 96)} 
@@ -69,6 +44,7 @@ export function OrderListClient({ orders }: { orders: any[] }) {
                     onClick={() => setSelectedProduct(order)}
                   />
                 </div>
+                
                 <div className="flex-1">
                   <button 
                     onClick={() => setSelectedProduct(order)}
@@ -77,18 +53,40 @@ export function OrderListClient({ orders }: { orders: any[] }) {
                     {order.itemName}
                   </button>
                   <p className="text-xs text-gray-500 mb-2">Sold by: Agentic AI Vendor</p>
-                  <p className="text-sm font-semibold mb-2">₹{order.amount.toFixed(2)}</p>
+                  <p className="text-sm font-semibold">₹{order.amount.toFixed(2)}</p>
                   
-                  <div className="flex items-center gap-2 mb-3">
-                    <button 
-                      onClick={() => setSelectedProduct(order)}
-                      className="bg-white hover:bg-gray-50 border border-gray-300 rounded-full px-4 py-1.5 text-sm font-medium shadow-sm transition-colors"
-                    >
-                      View your item
-                    </button>
+                  <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm text-gray-600">
+                    <div>
+                      <span className="font-semibold block text-xs uppercase text-gray-400 mb-1">Order Placed</span>
+                      <span>{new Date(order.orderDate).toLocaleDateString()}</span>
+                    </div>
+                    <div>
+                      <span className="font-semibold block text-xs uppercase text-gray-400 mb-1">Total</span>
+                      <span className="font-medium text-gray-900">₹{order.amount.toFixed(2)}</span>
+                    </div>
+                    <div>
+                      <span className="font-semibold block text-xs uppercase text-gray-400 mb-1">Ship To</span>
+                      <span className="text-blue-600 hover:underline cursor-pointer hover:text-orange-700">Agentic Shopper ▾</span>
+                    </div>
+                    <div>
+                      <span className="font-semibold block text-xs uppercase text-gray-400 mb-1">Order #</span>
+                      <span className="text-gray-900 uppercase">{order.id.substring(0, 8)}</span>
+                      <div className="flex gap-2 text-xs mt-1">
+                        <button onClick={() => setSelectedProduct(order)} className="text-blue-600 hover:underline hover:text-orange-700">Details</button>
+                        <span className="text-gray-300">|</span>
+                        <a href="#" className="text-blue-600 hover:underline hover:text-orange-700">Invoice</a>
+                      </div>
+                    </div>
                   </div>
                 </div>
+                
                 <div className="flex flex-col gap-2 w-full sm:w-48 shrink-0">
+                  <button 
+                    onClick={() => setSelectedProduct(order)}
+                    className="w-full text-center bg-white hover:bg-gray-50 border border-gray-300 rounded-full px-3 py-1.5 text-sm font-medium shadow-sm transition-colors"
+                  >
+                    View your item
+                  </button>
                   <button className="w-full text-center bg-white hover:bg-gray-50 border border-gray-300 rounded-full px-3 py-1.5 text-sm font-medium shadow-sm transition-colors">
                     Track package
                   </button>
@@ -96,9 +94,8 @@ export function OrderListClient({ orders }: { orders: any[] }) {
                   {order.status !== 'Cancelled' ? (
                     <CancelOrderButton orderId={order.id} orderDate={new Date(order.orderDate).toISOString()} />
                   ) : (
-                    <span className="w-full text-center text-red-600 text-sm font-medium mt-2">Order Cancelled</span>
+                    <span className="w-full text-center text-red-600 text-sm font-medium mt-2 border border-red-200 rounded-full py-1.5 bg-red-50">Cancelled</span>
                   )}
-                  
                 </div>
               </div>
             </div>
