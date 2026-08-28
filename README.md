@@ -1,43 +1,48 @@
 # Buy BuDDY AI - Agent-to-Agent (A2A) Commerce Platform
 
-Welcome to **Buy BuDDY AI**, a cutting-edge Next.js application that demonstrates the future of **Autonomous Agent-to-Agent (A2A) Commerce**. 
+Welcome to Buy BuDDY AI, a modern Next.js application that demonstrates the future of Autonomous Agent-to-Agent (A2A) Commerce. 
 
-This platform allows users to delegate purchasing power to a personal AI agent, complete with strict guardrails, real-time auditing, and graceful step-up authentication. 
+This platform allows users to delegate purchasing power to a personal AI agent, complete with strict financial guardrails, real-time auditing, interactive checkout flows, and graceful step-up authentication.
 
 ---
 
-## 🚀 Key Features
+## Key Features
 
-* **🤖 Autonomous AI Agent Console**
-  Interact with your personal AI via natural language. Tell the agent "I want to buy a phone" or "Order my usual coffee," and the agent will match your intent to the catalog and process the checkout autonomously.
-  
-* **🛡️ Delegated Mandates & Guardrails**
-  Safety first! You control the AI's wallet. Set hard limits on the maximum transaction amount and restrict which categories (e.g., Groceries, Subscription) the AI is legally allowed to purchase from.
+* **Autonomous AI Agent Console (Powered by Groq LLM)**
+  Interact with your personal AI via natural language. Tell the agent your intent, and the agent will match your request to the catalog, check inventory, process dynamic cross-selling, and handle the checkout autonomously.
 
-* **🛑 Graceful Step-Up Authentication (MFA)**
-  If the AI attempts a purchase that exceeds its authorized mandate (e.g., buying an expensive phone when only authorized for groceries), the system actively blocks it. It triggers a "Graceful Failure" state, prompting the human user for biometric/MFA Step-Up Authentication to manually approve the overage.
+* **Interactive Two-Step Checkout Flow**
+  The AI utilizes a strict two-step verification process. Before any purchase is finalized, the agent requires explicit user confirmation via an interactive UI approval card within the chat interface, ensuring complete control over transactions.
 
-* **📜 Real-time Transaction Audit Trail**
-  Total transparency. The A2A Audit Trail gives you a terminal-style look into the AI's "thought process." See intent capture, catalog matching, bounded boundary checks, and gated token generation in real-time.
+* **Delegated Mandates & Financial Guardrails**
+  Control the AI's wallet architecture. Set hard limits on the maximum transaction amount. Every financial action undertaken by the AI is explainable, bounded, and gated.
 
-* **📦 Database-Backed Order Management**
-  All successful autonomous and human-approved transactions are saved to a Prisma-backed SQLite database. View your active orders, delivery timelines, and cancel orders within a 7-day window.
+* **Graceful Step-Up Authentication (MFA)**
+  If the AI attempts a purchase that exceeds its authorized financial mandate, the system actively blocks it. It triggers a Graceful Failure state, prompting the human user for biometric or MFA Step-Up Authentication to manually approve the overage.
 
-* **🔐 Role-Based Access (Admin)**
+* **Real-time Transaction Audit Trail**
+  Maintain total transparency. The A2A Audit Trail provides a terminal-style look into the AI's processing logic. Monitor intent capture, catalog matching, bounded boundary checks, and gated token generation in real-time.
+
+* **Comprehensive Order Management System**
+  All successful autonomous and human-approved transactions are saved to a Prisma-backed SQLite database. Users can view active orders, dynamic product images, delivery timelines, and initiate order cancellations through a formal confirmation modal.
+
+* **Role-Based Access (Admin)**
   Secure login system with a dedicated Admin portal.
 
 ---
 
-## 🛠️ Tech Stack
+## Technical Stack
 
 * **Framework:** Next.js 14 (App Router)
-* **Styling:** Tailwind CSS, Framer Motion, Lucide Icons
+* **Styling:** Tailwind CSS, Framer Motion
 * **Database:** SQLite with Prisma ORM
 * **Language:** TypeScript
+* **AI Integration:** Groq SDK (Llama Models)
+* **Payments:** Razorpay API Integration
 
 ---
 
-## 💻 Getting Started
+## Getting Started
 
 Follow these steps to run the project locally:
 
@@ -65,26 +70,26 @@ npm run dev
 ```
 
 ### 5. Test the Application
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000 with your browser to see the result.
 
 **Admin Login Details:**
 To test the fully authenticated application flow:
-* **Email:** `admin@gmail.com`
-* **Password:** `Admin@123`
+* **Email:** admin@gmail.com
+* **Password:** Admin@123
 
 ---
 
-## 💡 How to use the Agent (A2A Demo)
+## Usage Guide (A2A Demo)
 
-1. Log in using the Admin credentials.
-2. Navigate to the **Agent Console** (`/agent`).
-3. Set your **Delegated Consent** rules on the left (e.g., Max limit ₹500, Categories: Groceries).
-4. Chat with the agent on the right! 
-   * *Try an authorized purchase:* "Buy some coffee beans" (Under limit, authorized category -> Auto Checkout)
-   * *Try an unauthorized purchase:* "Buy a phone" (Over limit, unauthorized category -> Triggers Step-Up Auth!)
-5. Watch the **A2A Audit Trail** verify and explain every single action.
-6. Visit **My Orders** (`/orders`) to see the final results.
+1. Log in using the provided Admin credentials.
+2. Navigate to the storefront and interact with the AI Store Clerk on the right sidebar.
+3. Configure your Delegated Consent rules via the settings panel (e.g., Max limit ₹500).
+4. Chat with the agent to initiate a purchase: 
+   * Authorized purchase: The AI will generate an approval card. Upon clicking 'Approve', it will process via Auto Checkout.
+   * Unauthorized purchase: If the item exceeds the set mandate, the AI will trigger the Step-Up Authentication flow for manual approval.
+5. Monitor the A2A Audit Trail to verify and understand the logic behind every autonomous action.
+6. Visit the My Orders dashboard to review order details, view dynamic product images, and manage cancellations.
 
 ---
 
-*This project was built to explore secure, explainable, and bounded AI-driven commerce systems.*
+*This project was developed to explore secure, explainable, and bounded AI-driven commerce systems.*
