@@ -1,6 +1,7 @@
 import { Navbar } from '@/components/Navbar';
 import Link from 'next/link';
 import prisma from '@/lib/prisma';
+import { CancelOrderButton } from '@/components/CancelOrderButton';
 
 export const dynamic = 'force-dynamic';
 
