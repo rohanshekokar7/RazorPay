@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ShieldCheck, CreditCard, CalendarClock, Bot, CheckCircle2 } from 'lucide-react';
+import { ShieldCheck, CreditCard, CalendarClock, Bot, CheckCircle2, ChevronDown } from 'lucide-react';
 import { useAgent } from '@/context/AgentContext';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
@@ -38,6 +38,7 @@ export function AgentSettings() {
   const [isSaved, setIsSaved] = useState(false);
 
   const [expirationPreset, setExpirationPreset] = useState<string>('custom');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const handlePresetChange = (val: string) => {
 
@@ -142,50 +143,71 @@ export function AgentSettings() {
             <CalendarClock className="h-4 w-4 text-gray-500" />
             Mandate Expiration Date
           </label>
-          <div className="flex flex-col gap-3">
-            <div className="flex flex-wrap gap-2">
-              {[
-                { id: '1_day', label: '1 Day' },
-                { id: '1_week', label: '1 Week' },
-                { id: '1_month', label: '1 Month' },
-                { id: '6_months', label: '6 Mos' },
-                { id: '1_year', label: '1 Year' },
-                { id: 'custom', label: 'Custom' },
-              ].map((preset) => (
-                <button
-                  key={preset.id}
-                  onClick={() => handlePresetChange(preset.id)}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${
-                    expirationPreset === preset.id 
-                      ? 'bg-cyan-500 text-white border-cyan-500 shadow-sm' 
-                      : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
-                  }`}
-                >
-                  {preset.label}
-                </button>
-              ))}
-            </div>
-
-            <div className="flex gap-2 w-full">
-              {expirationPreset === 'custom' ? (
-                <div className="relative flex-1">
-                  <DatePicker 
-                    selected={expiresAtDate} 
-                    onChange={(date: Date | null) => setExpiresAtDate(date)} 
-                    dateFormat="dd/MM/yyyy"
-                    minDate={new Date()}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all outline-none"
-                    wrapperClassName="w-full"
-                  />
+          <div className="flex gap-2">
+            <div className="relative w-48">
+              <button
+                type="button"
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="w-full flex justify-between items-center px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 bg-white shadow-sm"
+              >
+                <span className="text-sm font-medium">
+                  {[
+                    { id: '1_day', label: '1 Day' },
+                    { id: '1_week', label: '1 Week' },
+                    { id: '1_month', label: '1 Month' },
+                    { id: '6_months', label: '6 Months' },
+                    { id: '1_year', label: '1 Year' },
+                    { id: 'custom', label: 'Custom Date' },
+                  ].find(p => p.id === expirationPreset)?.label || 'Custom Date'}
+                </span>
+                <ChevronDown className="h-4 w-4 text-gray-500" />
+              </button>
+              
+              {isDropdownOpen && (
+                <div className="absolute z-50 w-full mt-1 bg-zinc-800 border border-zinc-700 rounded-lg shadow-2xl py-1 overflow-hidden">
+                  {[
+                    { id: '1_day', label: '1 Day' },
+                    { id: '1_week', label: '1 Week' },
+                    { id: '1_month', label: '1 Month' },
+                    { id: '6_months', label: '6 Months' },
+                    { id: '1_year', label: '1 Year' },
+                    { id: 'custom', label: 'Custom Date' },
+                  ].map((preset) => (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      onClick={() => {
+                        handlePresetChange(preset.id);
+                        setIsDropdownOpen(false);
+                      }}
+                      className={`w-full text-left px-4 py-2 text-sm hover:bg-zinc-700 hover:text-white transition-colors ${
+                        expirationPreset === preset.id ? 'bg-cyan-500 text-white font-medium' : 'text-zinc-300'
+                      }`}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
                 </div>
-              ) : (
-                expiresAtDate && (
-                  <div className="flex-1 px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-700 flex items-center text-sm font-medium">
-                    Valid until {expiresAtDate.toLocaleDateString(undefined, { weekday: 'short', year: 'numeric', month: 'long', day: 'numeric' })}
-                  </div>
-                )
               )}
             </div>
+
+            {expirationPreset === 'custom' && (
+              <div className="relative flex-1">
+                <DatePicker 
+                  selected={expiresAtDate} 
+                  onChange={(date: Date | null) => setExpiresAtDate(date)} 
+                  dateFormat="dd/MM/yyyy"
+                  minDate={new Date()}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all outline-none"
+                  wrapperClassName="w-full"
+                />
+              </div>
+            )}
+            {expirationPreset !== 'custom' && expiresAtDate && (
+              <div className="flex-1 px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-700 flex items-center text-sm font-medium">
+                Valid until {expiresAtDate.toLocaleDateString(undefined, { weekday: 'short', year: 'numeric', month: 'long', day: 'numeric' })}
+              </div>
+            )}
           </div>
         </div>
       </div>
