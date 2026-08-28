@@ -439,21 +439,22 @@ export function ChatInterface({ onLogsReceived, simulatePaymentTick = 0, externa
                     {msg.role === 'user' ? (
                       <p className="whitespace-pre-wrap text-sm leading-relaxed">{msg.text}</p>
                     ) : (
-                      <ReactMarkdown 
-                        remarkPlugins={[remarkGfm]}
-                        className="text-sm leading-relaxed overflow-x-auto"
-                        components={{
-                          table: ({node, ...props}) => <table className="w-full text-left border-collapse my-2 min-w-full" {...props} />,
-                          th: ({node, ...props}) => <th className="border-b-2 border-gray-200 py-2 px-3 font-semibold text-gray-700 bg-gray-50" {...props} />,
-                          td: ({node, ...props}) => <td className="border-b border-gray-100 py-2 px-3" {...props} />,
-                          p: ({node, ...props}) => <p className="mb-2 last:mb-0 whitespace-pre-wrap" {...props} />,
-                          ul: ({node, ...props}) => <ul className="list-disc pl-5 mb-2" {...props} />,
-                          ol: ({node, ...props}) => <ol className="list-decimal pl-5 mb-2" {...props} />,
-                          li: ({node, ...props}) => <li className="mb-1" {...props} />
-                        }}
-                      >
-                        {msg.text}
-                      </ReactMarkdown>
+                      <div className="text-sm leading-relaxed overflow-x-auto">
+                        <ReactMarkdown 
+                          remarkPlugins={[remarkGfm]}
+                          components={{
+                            table: ({node, ...props}) => <table className="w-full text-left border-collapse my-2 min-w-full" {...props} />,
+                            th: ({node, ...props}) => <th className="border-b-2 border-gray-200 py-2 px-3 font-semibold text-gray-700 bg-gray-50" {...props} />,
+                            td: ({node, ...props}) => <td className="border-b border-gray-100 py-2 px-3" {...props} />,
+                            p: ({node, ...props}) => <p className="mb-2 last:mb-0 whitespace-pre-wrap" {...props} />,
+                            ul: ({node, ...props}) => <ul className="list-disc pl-5 mb-2" {...props} />,
+                            ol: ({node, ...props}) => <ol className="list-decimal pl-5 mb-2" {...props} />,
+                            li: ({node, ...props}) => <li className="mb-1" {...props} />
+                          }}
+                        >
+                          {msg.text}
+                        </ReactMarkdown>
+                      </div>
                     )}
                     
                     {msg.isStepUp && (
