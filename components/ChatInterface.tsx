@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Settings2, X, ShieldAlert, BadgeCheck, Loader2, MessageSquarePlus } from 'lucide-react';
+import { Send, Bot, User, Settings2, X, ShieldAlert, BadgeCheck, Loader2, SquarePen } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -388,10 +388,10 @@ export function ChatInterface({ onLogsReceived, simulatePaymentTick = 0, externa
               }]);
               if (onLogsReceived) onLogsReceived([]);
             }} 
-            className="p-2 text-gray-700 hover:text-black hover:bg-gray-200 rounded-full transition"
+             className="p-2 text-gray-700 hover:text-black hover:bg-gray-200 rounded-full transition"
             title="Start New Chat"
           >
-            <MessageSquarePlus className="w-5 h-5" strokeWidth={2.5} />
+            <SquarePen className="w-5 h-5" strokeWidth={2.5} />
           </button>
           <button 
             onClick={() => setShowSettings(true)} 
