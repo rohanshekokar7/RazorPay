@@ -164,7 +164,7 @@ export function AgentSettings() {
               </button>
               
               {isDropdownOpen && (
-                <div className="absolute z-50 w-full mt-1 bg-zinc-800 border border-zinc-700 rounded-lg shadow-2xl py-1 overflow-hidden">
+                <div className="absolute z-50 w-full bottom-full mb-1 bg-zinc-800 border border-zinc-700 rounded-lg shadow-2xl py-1 overflow-hidden">
                   {[
                     { id: '1_day', label: '1 Day' },
                     { id: '1_week', label: '1 Week' },
@@ -198,6 +198,7 @@ export function AgentSettings() {
                   onChange={(date: Date | null) => setExpiresAtDate(date)} 
                   dateFormat="dd/MM/yyyy"
                   minDate={new Date()}
+                  popperPlacement="top-end"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all outline-none"
                   wrapperClassName="w-full"
                 />
