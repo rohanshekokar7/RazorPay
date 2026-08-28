@@ -27,8 +27,7 @@ export function CancelOrderButton({ orderId, orderDate }: { orderId: string, ord
       const data = await res.json();
       
       if (res.ok) {
-        // Redirect to chatbot to ask for cancellation feedback
-        router.push('/?cancel_feedback=true');
+        router.refresh();
       } else {
         alert(`Failed to cancel: ${data.error}`);
       }
