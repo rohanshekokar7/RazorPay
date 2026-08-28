@@ -47,8 +47,8 @@ export default async function OrdersPage() {
         ) : (
           <div className="flex flex-col gap-6">
             {dbOrders.map((order) => (
-              <div key={order.id} className="border border-gray-200 rounded-lg bg-white overflow-hidden shadow-sm">
-                <div className="bg-gray-100 px-5 py-3 border-b border-gray-200 flex flex-wrap gap-y-2 justify-between text-sm text-gray-500">
+              <div key={order.id} className="border border-gray-200 rounded-lg bg-white overflow-hidden shadow-sm p-5">
+                <div className="flex flex-wrap gap-y-2 justify-between text-sm text-gray-500 border-b border-gray-100 pb-4 mb-4">
                   <div className="flex gap-8">
                     <div className="flex flex-col">
                       <span className="uppercase text-xs font-semibold mb-0.5">Order Placed</span>
@@ -73,7 +73,7 @@ export default async function OrdersPage() {
                   </div>
                 </div>
                 
-                <div className="p-5">
+                <div>
                   <div className="flex items-center justify-between mb-4">
                     <h3 className={`text-lg font-bold ${order.status === 'Delivered' ? 'text-gray-900' : order.status === 'Cancelled' ? 'text-red-700' : 'text-green-700'}`}>
                       {order.status === 'Cancelled' 
