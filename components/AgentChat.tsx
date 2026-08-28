@@ -41,6 +41,26 @@ export function AgentChat({ onLog }: AgentChatProps) {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  useEffect(() => {
+    // Read from window location to avoid Next.js Suspense boundary requirements for useSearchParams
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('cancel_feedback') === 'true') {
+        // Remove the param so it doesn't trigger again on refresh
+        window.history.replaceState({}, '', '/agent');
+        
+        setMessages(prev => [
+          ...prev, 
+          {
+            id: 'cancel_msg_1',
+            role: 'agent',
+            text: "Sorry for the inconvenience. May I know the reason for cancelling the order?"
+          }
+        ]);
+      }
+    }
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
