@@ -1,26 +1,33 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User } from 'lucide-react';
+import { Send, Bot, User, Settings, X, ShieldAlert, BadgeCheck, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PaymentLink } from './PaymentLink';
 import { AuditLog } from './AuditTrailConsole';
+import { useAgent } from '@/context/AgentContext';
+import { AgentSettings } from './AgentSettings';
 
 interface Message {
   id: string;
-  role: 'user' | 'model';
+  role: 'user' | 'model' | 'system';
   text: string;
   paymentLink?: { url: string; amount: number; title: string } | null;
   imageUrl?: string | null;
+  isStepUp?: boolean;
 }
 
 interface ChatInterfaceProps {
-  onLogsReceived: (logs: AuditLog[]) => void;
+  onLogsReceived?: (logs: AuditLog[]) => void;
   simulatePaymentTick?: number;
   externalMessageTrigger?: { text: string; timestamp: number };
 }
 
 export function ChatInterface({ onLogsReceived, simulatePaymentTick = 0, externalMessageTrigger }: ChatInterfaceProps) {
+  const { mandate, deductFromLimit } = useAgent();
+  const [showSettings, setShowSettings] = useState(false);
+  const [pendingTx, setPendingTx] = useState<{ amount: number, category: string, itemName: string } | null>(null);
+
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'initial',
@@ -50,14 +57,30 @@ export function ChatInterface({ onLogsReceived, simulatePaymentTick = 0, externa
     }
   }, [simulatePaymentTick]);
 
+  useEffect(() => {
+    // Read from window location to avoid Next.js Suspense boundary requirements for useSearchParams
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('cancel_feedback') === 'true') {
+        window.history.replaceState({}, '', '/');
+        setMessages(prev => [
+          ...prev, 
+          {
+            id: 'cancel_msg_1',
+            role: 'model',
+            text: "Sorry for the inconvenience. May I know the reason for cancelling the order?"
+          }
+        ]);
+      }
+    }
+  }, []);
+
   const handleHiddenSystemMessage = async (systemText: string) => {
     if (isLoading) return;
     setIsLoading(true);
 
     try {
-      // Build API request payload matching standard Gemini chat history format
-      const apiMessages = messages.map(m => ({ role: m.role, parts: [{ text: m.text }] }));
-      // Append hidden system message (as user role so the model reads it as an event)
+      const apiMessages = messages.filter(m => m.role !== 'system').map(m => ({ role: m.role, parts: [{ text: m.text }] }));
       apiMessages.push({ role: 'user', parts: [{ text: systemText }] });
 
       const res = await fetch('/api/chat', {
@@ -70,7 +93,7 @@ export function ChatInterface({ onLogsReceived, simulatePaymentTick = 0, externa
 
       const data = await res.json();
       
-      if (data.auditLogs) {
+      if (data.auditLogs && onLogsReceived) {
         onLogsReceived(data.auditLogs);
       }
 
@@ -82,7 +105,6 @@ export function ChatInterface({ onLogsReceived, simulatePaymentTick = 0, externa
         imageUrl: data.imageUrl
       };
 
-      // Note: We don't add the hidden system message to the UI state
       setMessages(prev => [...prev, modelMsg]);
 
     } catch (error) {
@@ -110,9 +132,125 @@ export function ChatInterface({ onLogsReceived, simulatePaymentTick = 0, externa
     setMessages(prev => [...prev, userMsg]);
     setIsLoading(true);
 
+    if (onLogsReceived) {
+      onLogsReceived([{ timestamp: new Date().toISOString(), level: 'INFO', message: `[Intent Captured] User requested: "${textToSend}"` } as any]);
+    }
+
+    if (mandate.isActive) {
+      // --- AUTONOMOUS AGENT LOGIC ---
+      try {
+        let amount = 300;
+        let category = 'Groceries';
+        let itemId = 'prod_generic';
+        let itemName = 'Generic Item';
+        
+        if (textToSend.toLowerCase().includes('coffee')) {
+          amount = 450; category = 'Groceries'; itemId = 'prod_coffee_01'; itemName = 'Artisan 250g Coffee Beans';
+        } else if (textToSend.toLowerCase().includes('laptop') || textToSend.toLowerCase().includes('expensive')) {
+          amount = 80000; category = 'Electronics'; itemId = 'prod_laptop_01'; itemName = 'ProBook Ultra 14"';
+        } else if (textToSend.toLowerCase().includes('phone') || textToSend.toLowerCase().includes('mobile')) {
+          amount = 50000; category = 'Electronics'; itemId = 'prod_phone_01'; itemName = 'Smartphone X1';
+        } else if (textToSend.toLowerCase().includes('condom')) {
+          amount = 300; category = 'Health & Wellness'; itemId = 'prod_condom_01'; itemName = 'Health Item';
+        }
+
+        if (onLogsReceived) {
+          onLogsReceived([{ timestamp: new Date().toISOString(), level: 'INFO', message: `[Bounded Check] Requesting autonomous checkout for ₹${amount} in category '${category}'` } as any]);
+        }
+
+        const currentCart = [{ product_id: itemId, name: itemName, price: amount }];
+
+        const res = await fetch('/api/agent-checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            amount,
+            category,
+            itemName,
+            mandate: {
+              isActive: mandate.isActive,
+              maxLimit: mandate.maxLimit,
+              allowedCategories: mandate.allowedCategories,
+            }
+          })
+        });
+
+        const data = await res.json();
+
+        if (res.ok && data.status === 'success') {
+           if (onLogsReceived) onLogsReceived([{ timestamp: new Date().toISOString(), level: 'SUCCESS', message: `[Bounded Check Passed] ₹${amount}/₹${mandate.maxLimit} used -> [Gated] Token generated.` } as any]);
+           
+           deductFromLimit(amount);
+           setMessages(prev => [...prev, { 
+            id: Date.now().toString(), 
+            role: 'system', 
+            text: `✅ Autonomous Payment Successful. ₹${amount} deducted from mandate limit.` 
+          }]);
+
+          try {
+            const orchestratorResponse = await fetch('/api/agent/orchestrator', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ intent: textToSend, currentCart, userContext: {} })
+            });
+            const orchestratorData = await orchestratorResponse.json();
+
+            let agentReply = `All done! I've placed the order for ${itemName} successfully using my delegated mandate. `;
+
+            if (orchestratorData?.orchestrator_decision?.should_intervene) {
+              const instructions = orchestratorData.orchestrator_decision.instructions[0];
+              agentReply += `\n\n${instructions.system_prompt}`;
+            }
+
+            setMessages(prev => [...prev, { 
+              id: (Date.now() + 1).toString(), 
+              role: 'model', 
+              text: agentReply 
+            }]);
+          } catch (e) {
+            setMessages(prev => [...prev, { 
+              id: (Date.now() + 1).toString(), 
+              role: 'model', 
+              text: `All done! I've placed the order for ${itemName} successfully using my delegated mandate.` 
+            }]);
+          }
+
+        } else if (res.status === 403 && data.requiresStepUp) {
+          if (onLogsReceived) onLogsReceived([{ timestamp: new Date().toISOString(), level: 'ERROR', message: `ERR_LIMIT_EXCEEDED: ${data.message}` } as any]);
+          setPendingTx({ amount, category, itemName });
+          setMessages(prev => [...prev, { 
+            id: Date.now().toString(), 
+            role: 'system', 
+            text: `⚠️ Step-up Authentication Required` 
+          }]);
+          setMessages(prev => [...prev, { 
+            id: (Date.now() + 1).toString(), 
+            role: 'model', 
+            text: `I couldn't process this autonomously because: ${data.message}. Please manually approve this transaction to proceed.`,
+            isStepUp: true
+          }]);
+        } else {
+           setMessages(prev => [...prev, { 
+            id: Date.now().toString(), 
+            role: 'system', 
+            text: `❌ Transaction Failed: ${data.message || 'Unknown error'}` 
+          }]);
+        }
+      } catch (error) {
+        setMessages(prev => [...prev, { 
+          id: Date.now().toString(), 
+          role: 'system', 
+          text: "❌ Network error trying to reach the agent checkout API." 
+        }]);
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
+
+    // --- STANDARD GEMINI LOGIC ---
     try {
-      // Build API request payload matching standard Gemini chat history format
-      const apiMessages = messages.map(m => ({ role: m.role, parts: [{ text: m.text }] }));
+      const apiMessages = messages.filter(m => m.role !== 'system').map(m => ({ role: m.role, parts: [{ text: m.text }] }));
       apiMessages.push({ role: 'user', parts: [{ text: userMsg.text }] });
 
       const res = await fetch('/api/chat', {
@@ -125,7 +263,7 @@ export function ChatInterface({ onLogsReceived, simulatePaymentTick = 0, externa
 
       const data = await res.json();
       
-      if (data.auditLogs) {
+      if (data.auditLogs && onLogsReceived) {
         onLogsReceived(data.auditLogs);
       }
 
@@ -159,6 +297,54 @@ export function ChatInterface({ onLogsReceived, simulatePaymentTick = 0, externa
     await handleSendMessage(currentInput);
   };
 
+  const handleApproveOverage = async () => {
+    if (!pendingTx) return;
+
+    setIsLoading(true);
+    if (onLogsReceived) {
+       onLogsReceived([{ timestamp: new Date().toISOString(), level: 'SUCCESS', message: `[User Authorized] Step-up authentication completed by user via MFA/Biometrics.` } as any]);
+    }
+    
+    try {
+      const res = await fetch('/api/agent-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: pendingTx.amount,
+          category: pendingTx.category,
+          itemName: pendingTx.itemName,
+          bypassMandate: true,
+          mandate: {
+            isActive: mandate.isActive,
+            maxLimit: mandate.maxLimit,
+            allowedCategories: mandate.allowedCategories,
+          }
+        })
+      });
+
+      const data = await res.json();
+      
+      if (res.ok && data.status === 'success') {
+        setMessages(prev => [...prev, { 
+          id: Date.now().toString(), 
+          role: 'model', 
+          text: `Thank you! I have verified your approval and processed the overage transaction successfully.` 
+        }]);
+      } else {
+        setMessages(prev => [...prev, { 
+          id: Date.now().toString(), 
+          role: 'system', 
+          text: `❌ Override Transaction Failed: ${data.message || 'Unknown error'}` 
+        }]);
+      }
+    } catch (e) {
+      // Ignore
+    } finally {
+      setIsLoading(false);
+      setPendingTx(null);
+    }
+  };
+
   return (
     <div className="flex h-full flex-col bg-blue-50 rounded-xl overflow-hidden border border-gray-200 shadow-sm relative">
       {/* WhatsApp Doodle Background Overlay */}
@@ -167,18 +353,64 @@ export function ChatInterface({ onLogsReceived, simulatePaymentTick = 0, externa
         style={{ backgroundImage: "url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png')", backgroundRepeat: 'repeat', backgroundSize: '400px' }}
       ></div>
 
-      <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center gap-3 z-10 shadow-sm">
-        <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
-          <Bot className="h-6 w-6" />
+      <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between z-10 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+            <Bot className="h-6 w-6" />
+          </div>
+          <div>
+            <h2 className="font-semibold text-gray-900 leading-tight">AI Store Clerk</h2>
+            <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block"></span>
+              online
+            </p>
+          </div>
         </div>
-        <div>
-          <h2 className="font-semibold text-gray-900 leading-tight">AI Store Clerk</h2>
-          <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block"></span>
-            online
-          </p>
+        
+        {/* Settings & Budget */}
+        <div className="flex items-center gap-3">
+          {mandate.isActive && (
+            <div className="px-2 py-1 rounded border flex items-center gap-1.5 bg-zinc-800 border-zinc-700">
+              <BadgeCheck className="h-3.5 w-3.5 text-green-400" />
+              <span className="text-xs font-bold text-white">₹{mandate.maxLimit.toFixed(2)}</span>
+            </div>
+          )}
+          <button 
+            onClick={() => setShowSettings(true)} 
+            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full transition"
+            title="Agent Settings"
+          >
+            <Settings className="w-5 h-5" />
+          </button>
         </div>
       </div>
+
+      <AnimatePresence>
+        {showSettings && (
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }} 
+            className="absolute inset-0 z-50 bg-black/40 flex items-center justify-center p-4 backdrop-blur-sm"
+          >
+             <motion.div 
+                initial={{ scale: 0.95, y: 10 }} 
+                animate={{ scale: 1, y: 0 }} 
+                exit={{ scale: 0.95, y: 10 }} 
+                className="bg-white w-full max-w-md max-h-[90%] overflow-hidden rounded-xl shadow-xl flex flex-col relative"
+             >
+                <div className="absolute top-3 right-3 z-10">
+                  <button onClick={() => setShowSettings(false)} className="p-1.5 bg-zinc-800/10 hover:bg-zinc-800/20 text-zinc-800 rounded-full transition">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="flex-1 overflow-y-auto">
+                  <AgentSettings />
+                </div>
+             </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="flex-1 overflow-y-auto p-6 space-y-4 z-10">
         <AnimatePresence initial={false}>
@@ -187,31 +419,54 @@ export function ChatInterface({ onLogsReceived, simulatePaymentTick = 0, externa
               key={msg.id}
               initial={{ opacity: 0, y: 10, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              className={`flex max-w-[85%] ${msg.role === 'user' ? 'ml-auto justify-end' : ''}`}
+              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
-              <div className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                <div className={`rounded-lg px-4 py-2 shadow-sm ${
-                  msg.role === 'user' 
-                    ? 'bg-blue-600 text-white rounded-tr-sm' 
-                    : 'bg-white text-gray-800 rounded-tl-sm'
-                }`}>
-                  <p className="whitespace-pre-wrap text-sm leading-relaxed">{msg.text}</p>
+              {msg.role === 'system' ? (
+                <div className="w-full text-center my-2">
+                  <span className="inline-block px-3 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800 border border-yellow-200">
+                    {msg.text}
+                  </span>
                 </div>
-                {msg.paymentLink && (
-                  <PaymentLink 
-                    url={msg.paymentLink.url} 
-                    amount={msg.paymentLink.amount} 
-                    title={msg.paymentLink.title} 
-                  />
-                )}
-                {msg.imageUrl && (
-                  <img 
-                    src={msg.imageUrl} 
-                    alt="Product" 
-                    className="mt-3 rounded-lg max-w-[250px] w-full object-cover shadow-sm border border-gray-100" 
-                  />
-                )}
-              </div>
+              ) : (
+                <div className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} max-w-[85%]`}>
+                  <div className={`rounded-lg px-4 py-2 shadow-sm ${
+                    msg.role === 'user' 
+                      ? 'bg-blue-600 text-white rounded-tr-sm' 
+                      : 'bg-white text-gray-800 border border-gray-100 rounded-tl-sm'
+                  }`}>
+                    <p className="whitespace-pre-wrap text-sm leading-relaxed">{msg.text}</p>
+                    
+                    {msg.isStepUp && (
+                      <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <div className="flex items-center text-yellow-800 font-medium mb-3">
+                          <ShieldAlert className="w-4 h-4 mr-2" />
+                          Step-Up Authentication Required
+                        </div>
+                        <button 
+                          onClick={handleApproveOverage}
+                          className="w-full py-2 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold rounded-md transition-colors shadow-sm text-sm"
+                        >
+                          Approve Overage via Biometrics
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  {msg.paymentLink && (
+                    <PaymentLink 
+                      url={msg.paymentLink.url} 
+                      amount={msg.paymentLink.amount} 
+                      title={msg.paymentLink.title} 
+                    />
+                  )}
+                  {msg.imageUrl && (
+                    <img 
+                      src={msg.imageUrl} 
+                      alt="Product" 
+                      className="mt-3 rounded-lg max-w-[250px] w-full object-cover shadow-sm border border-gray-100" 
+                    />
+                  )}
+                </div>
+              )}
             </motion.div>
           ))}
           {isLoading && (

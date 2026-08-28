@@ -44,19 +44,6 @@ export default function Home() {
         setActiveCategory={setActiveCategory}
       />
 
-      {/* A2A Commerce Feature Banner */}
-      <div className="bg-zinc-950 text-white w-full py-3 px-4 flex justify-center items-center shadow-md z-10 relative">
-        <div className="text-center">
-          <span className="text-cyan-400 font-bold mr-2">New Feature:</span>
-          <span>Experience the future of autonomous checkout with Agent-to-Agent (A2A) Commerce.</span>
-          <Link 
-            href="/agent" 
-            className="ml-4 inline-block bg-white text-zinc-950 px-4 py-1 rounded-md text-sm font-semibold hover:bg-gray-200 transition"
-          >
-            Try A2A Commerce
-          </Link>
-        </div>
-      </div>
 
       {/* Main Content Area */}
       <div className="flex-1 flex p-4 w-full h-full min-h-0 relative bg-gray-100">
