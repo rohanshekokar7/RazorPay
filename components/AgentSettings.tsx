@@ -285,9 +285,9 @@ export function AgentSettings() {
               Mandate Authorized
             </>
           ) : mandate.isActive ? (
-            'Update Mandate (₹1)'
+            'Update Mandate'
           ) : (
-            'Authorize Agent (₹1)'
+            'Authorize Agent'
           )}
         </button>
       </div>
