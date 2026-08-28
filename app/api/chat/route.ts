@@ -10,7 +10,7 @@ const razorpay = new Razorpay({
 });
 
 import prisma from '@/lib/prisma';
-
+import { getImageUrl } from '@/lib/getImageUrl';
 // Tool declarations for Groq
 const tools: Groq.Chat.Completions.ChatCompletionTool[] = [
   {
