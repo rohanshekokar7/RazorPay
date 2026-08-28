@@ -375,13 +375,15 @@ CRITICAL RULES:
             if (args.image_url) {
                 imageUrl = args.image_url;
             } else {
-                const baseName = args.product_name.split(/[-–]/)[0].trim();
+                // Sanitize smart quotes to straight quotes for DB matching
+                const sanitizedName = args.product_name.replace(/['’‘]/g, "'").replace(/[“”]/g, '"');
+                const baseName = sanitizedName.split(/[-–]/)[0].trim();
                 const productMatch = await prisma.product.findFirst({
                     where: { name: { contains: baseName } }
                 });
                 
                 if (productMatch && productMatch.imageUrl) {
-                    imageUrl = productMatch.imageUrl;
+                    imageUrl = productMatch.imageUrl.replace('http://', 'https://');
                 } else {
                     imageUrl = getImageUrl(args.product_name, 400, 300);
                 }
@@ -413,7 +415,9 @@ CRITICAL RULES:
       toolCalls = responseMessage.tool_calls;
     }
     
-    finalReply = responseMessage.content || (paymentLink ? "I have generated a payment link for you below." : "I couldn't process that.");
+    // Remove any hallucinated markdown images to prevent double rendering
+    finalReply = (responseMessage.content || (paymentLink ? "I have generated a payment link for you below." : "I couldn't process that.")).replace(/!\[.*?\]\(.*?\)/g, '');
+    
     addLog('Generation Complete', 'SUCCESS', 'Successfully generated final response.');
     
     return NextResponse.json({
