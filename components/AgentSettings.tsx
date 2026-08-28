@@ -24,9 +24,6 @@ export function AgentSettings() {
   const { mandate, updateMandate } = useAgent();
   
   const [maxLimit, setMaxLimit] = useState(mandate.maxLimit || 500);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>(
-    mandate.allowedCategories.length > 0 ? mandate.allowedCategories : ['Clothing', 'Footwear']
-  );
   
   // Convert existing string to Date or create new Date
   const defaultDate = mandate.expiresAt 
@@ -56,17 +53,12 @@ export function AgentSettings() {
   };
 
 
-  const toggleCategory = (cat: string) => {
-    setSelectedCategories(prev => 
-      prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]
-    );
-  };
 
   const handleSave = () => {
     updateMandate({
       isActive: true,
       maxLimit,
-      allowedCategories: selectedCategories,
+      allowedCategories: [],
       expiresAt: expiresAtDate ? expiresAtDate.toISOString().split('T')[0] : '',
     });
     

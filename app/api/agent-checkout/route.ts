@@ -42,20 +42,6 @@ export async function POST(request: Request) {
           { status: 403 }
         );
       }
-
-      // Check allowed categories
-      if (mandate.allowedCategories && mandate.allowedCategories.length > 0) {
-        if (!mandate.allowedCategories.includes(category)) {
-          return NextResponse.json(
-            { 
-              status: 'failed', 
-              requiresStepUp: true, 
-              message: `Purchases in the '${category}' category are not authorized by your mandate.` 
-            }, 
-            { status: 403 }
-          );
-        }
-      }
     }
 
     // Generate expected delivery date (3 days from now)
