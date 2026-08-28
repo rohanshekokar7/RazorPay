@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { amount, category, mandate } = body;
+    const { amount, category, mandate, itemName } = body;
 
     // Validate the presence of the mandate
     if (!mandate || !mandate.isActive) {
@@ -42,8 +45,6 @@ export async function POST(request: Request) {
     }
 
     // Check allowed categories
-    // If allowedCategories is empty, assume all are allowed OR none are allowed depending on policy.
-    // For this simulation, we'll assume it must explicitly match if there are categories specified.
     if (mandate.allowedCategories && mandate.allowedCategories.length > 0) {
       if (!mandate.allowedCategories.includes(category)) {
         return NextResponse.json(
@@ -57,12 +58,28 @@ export async function POST(request: Request) {
       }
     }
 
+    // Generate expected delivery date (3 days from now)
+    const orderDate = new Date();
+    const expectedDeliveryDate = new Date();
+    expectedDeliveryDate.setDate(orderDate.getDate() + 3);
+
+    // Save to Database
+    const order = await prisma.order.create({
+      data: {
+        itemName: itemName || 'Generic Item',
+        amount: parseFloat(amount),
+        status: 'Processing',
+        orderDate: orderDate,
+        expectedDeliveryDate: expectedDeliveryDate
+      }
+    });
+
     // If all checks pass, authorize the autonomous payment
     return NextResponse.json(
       { 
         status: 'success', 
         message: 'Agent Authorized Payment processed successfully without manual intervention.',
-        transactionId: `txn_${Math.random().toString(36).substr(2, 9)}`
+        transactionId: order.id
       }, 
       { status: 200 }
     );

@@ -3,6 +3,8 @@
 import React, { useState } from 'react';
 import { ShieldCheck, CreditCard, CalendarClock, Bot, CheckCircle2 } from 'lucide-react';
 import { useAgent } from '@/context/AgentContext';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 
 const AVAILABLE_CATEGORIES = [
   'Footwear',
@@ -25,9 +27,13 @@ export function AgentSettings() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>(
     mandate.allowedCategories.length > 0 ? mandate.allowedCategories : ['Clothing', 'Footwear']
   );
-  const [expiresAt, setExpiresAt] = useState(
-    mandate.expiresAt || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-  );
+  
+  // Convert existing string to Date or create new Date
+  const defaultDate = mandate.expiresAt 
+    ? new Date(mandate.expiresAt) 
+    : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    
+  const [expiresAtDate, setExpiresAtDate] = useState<Date | null>(defaultDate);
   
   const [isSaved, setIsSaved] = useState(false);
 
@@ -42,7 +48,7 @@ export function AgentSettings() {
       isActive: true,
       maxLimit,
       allowedCategories: selectedCategories,
-      expiresAt,
+      expiresAt: expiresAtDate ? expiresAtDate.toISOString().split('T')[0] : '',
     });
     
     setIsSaved(true);
@@ -111,31 +117,6 @@ export function AgentSettings() {
           <p className="text-xs text-gray-500">The agent cannot spend more than this amount per transaction.</p>
         </div>
 
-        {/* Allowed Categories */}
-        <div className="space-y-3">
-          <label className="flex items-center gap-2 text-sm font-semibold text-gray-900">
-            <ShieldCheck className="h-4 w-4 text-gray-500" />
-            Allowed Merchant Categories
-          </label>
-          <div className="grid grid-cols-2 gap-2">
-            {AVAILABLE_CATEGORIES.map(cat => (
-              <label 
-                key={cat} 
-                className={`flex items-center gap-2 p-3 border rounded-lg cursor-pointer transition-all ${
-                  selectedCategories.includes(cat) ? 'bg-cyan-50 border-cyan-300' : 'bg-white border-gray-200 hover:bg-gray-50'
-                }`}
-              >
-                <input 
-                  type="checkbox" 
-                  checked={selectedCategories.includes(cat)}
-                  onChange={() => toggleCategory(cat)}
-                  className="rounded text-cyan-600 focus:ring-cyan-500"
-                />
-                <span className="text-sm text-gray-700">{cat}</span>
-              </label>
-            ))}
-          </div>
-        </div>
 
         {/* Expiration */}
         <div className="space-y-3">
@@ -143,12 +124,16 @@ export function AgentSettings() {
             <CalendarClock className="h-4 w-4 text-gray-500" />
             Mandate Expiration Date
           </label>
-          <input 
-            type="date"
-            value={expiresAt}
-            onChange={(e) => setExpiresAt(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all outline-none"
-          />
+          <div className="relative">
+            <DatePicker 
+              selected={expiresAtDate} 
+              onChange={(date) => setExpiresAtDate(date)} 
+              dateFormat="dd/MM/yyyy"
+              minDate={new Date()}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all outline-none"
+              wrapperClassName="w-full"
+            />
+          </div>
         </div>
       </div>
 

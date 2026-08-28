@@ -27,3 +27,13 @@ model Product {
   imageUrl    String?
   category    String?
 }
+
+model Order {
+  id                   String    @id @default(uuid())
+  itemName             String
+  amount               Float
+  status               String    @default("Processing")
+  orderDate            DateTime  @default(now())
+  expectedDeliveryDate DateTime?
+  userId               String?
+}

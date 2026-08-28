@@ -1,7 +1,18 @@
+'use client';
+
+import React, { useReducer } from 'react';
 import { AgentSettings } from '@/components/AgentSettings';
 import { AgentChat } from '@/components/AgentChat';
+import { TransactionAuditTrail, auditReducer, AuditLog } from '@/components/TransactionAuditTrail';
+import { AgentProvider } from '@/context/AgentContext'; // Ensure this is imported if not globally provided, though it is globally provided in layout.tsx. We'll rely on global.
 
 export default function AgentToAgentCommercePage() {
+  const [logs, dispatch] = useReducer(auditReducer, []);
+
+  const handleLog = (log: Omit<AuditLog, 'id' | 'timestamp'>) => {
+    dispatch({ type: 'ADD_LOG', payload: log });
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center">
       
@@ -16,16 +27,21 @@ export default function AgentToAgentCommercePage() {
       </div>
 
       {/* Main content grid */}
-      <div className="w-full max-w-7xl px-4 py-8 md:py-12 flex flex-col lg:flex-row gap-8">
+      <div className="w-full max-w-[1600px] px-4 py-8 md:py-12 flex flex-col lg:flex-row gap-6">
         
         {/* Left Column: Settings */}
-        <div className="w-full lg:w-5/12 xl:w-1/3 flex flex-col h-[700px]">
+        <div className="w-full lg:w-1/4 flex flex-col h-[700px]">
           <AgentSettings />
         </div>
 
-        {/* Right Column: Chat */}
-        <div className="w-full lg:w-7/12 xl:w-2/3 flex flex-col h-[700px]">
-          <AgentChat />
+        {/* Middle Column: Chat */}
+        <div className="w-full lg:w-2/4 flex flex-col h-[700px]">
+          <AgentChat onLog={handleLog} />
+        </div>
+
+        {/* Right Column: Audit Trail */}
+        <div className="w-full lg:w-1/4 flex flex-col h-[700px]">
+          <TransactionAuditTrail logs={logs} />
         </div>
 
       </div>

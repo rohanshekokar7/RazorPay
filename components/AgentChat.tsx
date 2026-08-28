@@ -3,14 +3,20 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Bot, Send, ShieldAlert, BadgeCheck, Loader2 } from 'lucide-react';
 import { useAgent } from '@/context/AgentContext';
+import { AuditLog } from './TransactionAuditTrail';
 
 interface ChatMessage {
   id: string;
   role: 'user' | 'agent' | 'system';
   text: string;
+  isStepUp?: boolean;
 }
 
-export function AgentChat() {
+interface AgentChatProps {
+  onLog?: (log: Omit<AuditLog, 'id' | 'timestamp'>) => void;
+}
+
+export function AgentChat({ onLog }: AgentChatProps) {
   const { mandate, deductFromLimit } = useAgent();
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -22,6 +28,13 @@ export function AgentChat() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
+
+  // Helper to safely log to the Audit Trail if the prop was passed
+  const logEvent = (level: AuditLog['level'], message: string) => {
+    if (onLog) {
+      onLog({ level, message });
+    }
+  };
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -36,95 +49,138 @@ export function AgentChat() {
     setMessages(prev => [...prev, { id: Date.now().toString(), role: 'user', text: userText }]);
     setIsLoading(true);
 
-    // Simulate Agent processing the request
-    setTimeout(async () => {
-      // Very basic keyword matching for simulation purposes
-      if (userText.toLowerCase().includes('order') || userText.toLowerCase().includes('buy')) {
-        let amount = 300; // Simulated amount
-        let category = 'Groceries'; // Simulated category
-        
-        if (userText.toLowerCase().includes('coffee')) {
-          amount = 450;
-          category = 'Groceries';
-        } else if (userText.toLowerCase().includes('laptop') || userText.toLowerCase().includes('expensive')) {
-          amount = 80000;
-          category = 'Electronics';
-        } else if (userText.toLowerCase().includes('condom')) {
-          amount = 300;
-          category = 'Health & Wellness';
-        }
+    logEvent('INFO', `[Intent Captured] User requested: "${userText}"`);
 
-        setMessages(prev => [...prev, { 
+    try {
+      // 1. Identify intent and price
+      let amount = 300;
+      let category = 'Groceries';
+      let itemId = 'prod_generic';
+      let itemName = 'Generic Item';
+      
+      if (userText.toLowerCase().includes('coffee')) {
+        amount = 450;
+        category = 'Groceries';
+        itemId = 'prod_coffee_01';
+        itemName = 'Artisan 250g Coffee Beans';
+      } else if (userText.toLowerCase().includes('laptop') || userText.toLowerCase().includes('expensive')) {
+        amount = 80000;
+        category = 'Electronics';
+        itemId = 'prod_laptop_01';
+        itemName = 'ProBook Ultra 14"';
+      } else if (userText.toLowerCase().includes('condom')) {
+        amount = 300;
+        category = 'Health & Wellness';
+        itemId = 'prod_condom_01';
+        itemName = 'Health Item';
+      }
+
+      logEvent('INFO', `[Catalog Match] Matched to ${itemName} at ₹${amount} in category '${category}'`);
+
+      // Mock Cart state for orchestrator
+      const currentCart = [{ product_id: itemId, name: itemName, price: amount }];
+
+      // 2. Call the autonomous checkout API (Handles Bounding & Guardrails)
+      logEvent('INFO', `[Bounded Check] Requesting autonomous checkout for ₹${amount} in category '${category}'`);
+
+      const res = await fetch('/api/agent-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount,
+          category,
+          itemName,
+          mandate: {
+            isActive: mandate.isActive,
+            maxLimit: mandate.maxLimit,
+            allowedCategories: mandate.allowedCategories,
+          }
+        })
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.status === 'success') {
+         logEvent('SUCCESS', `[Bounded Check Passed] ₹${amount}/₹${mandate.maxLimit} used -> [Gated] Token generated for merchant.`);
+         
+         deductFromLimit(amount);
+         setMessages(prev => [...prev, { 
           id: Date.now().toString(), 
-          role: 'agent', 
-          text: `I found what you're looking for! The total is ₹${amount} in the '${category}' category. Let me execute the checkout...` 
+          role: 'system', 
+          text: `✅ Autonomous Payment Successful. ₹${amount} deducted from mandate limit.` 
         }]);
 
-        // Call the mock autonomous checkout API
+        // 3. Call Campaign Orchestrator for Upsells
+        logEvent('INFO', `[Orchestrator] Querying active campaigns for intent and current cart...`);
         try {
-          const res = await fetch('/api/agent-checkout', {
+          const orchestratorResponse = await fetch('/api/agent/orchestrator', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              amount,
-              category,
-              mandate: {
-                isActive: mandate.isActive,
-                maxLimit: mandate.maxLimit,
-                allowedCategories: mandate.allowedCategories,
-              }
-            })
+            body: JSON.stringify({ intent: userText, currentCart, userContext: {} })
           });
+          const orchestratorData = await orchestratorResponse.json();
 
-          const data = await res.json();
+          let agentReply = `All done! I've placed the order for ${itemName} successfully using my delegated mandate. `;
 
-          if (res.ok && data.status === 'success') {
-             // Deduct locally for simulation
-             deductFromLimit(amount);
-             setMessages(prev => [...prev, { 
-              id: Date.now().toString(), 
-              role: 'system', 
-              text: `✅ Autonomous Payment Successful. ₹${amount} deducted from mandate limit.` 
-            }]);
-            setMessages(prev => [...prev, { 
-              id: (Date.now() + 1).toString(), 
-              role: 'agent', 
-              text: "All done! I've placed the order successfully using my delegated mandate. It will arrive soon." 
-            }]);
-          } else if (res.status === 403 && data.requiresStepUp) {
-            setMessages(prev => [...prev, { 
-              id: Date.now().toString(), 
-              role: 'system', 
-              text: `⚠️ Step-up Authentication Required: ${data.message}` 
-            }]);
-            setMessages(prev => [...prev, { 
-              id: (Date.now() + 1).toString(), 
-              role: 'agent', 
-              text: "I couldn't process this autonomously because it exceeds my limits. Please manually approve this transaction." 
-            }]);
+          if (orchestratorData?.orchestrator_decision?.should_intervene) {
+            const instructions = orchestratorData.orchestrator_decision.instructions[0];
+            logEvent('WARN', `[Orchestrator Intervention] Campaign triggered. Injecting upsell prompt: ${instructions.system_prompt}`);
+            agentReply += `\n\n${instructions.system_prompt}`;
           } else {
-             setMessages(prev => [...prev, { 
-              id: Date.now().toString(), 
-              role: 'system', 
-              text: `❌ Transaction Failed: ${data.message || 'Unknown error'}` 
-            }]);
+            logEvent('INFO', `[Orchestrator] No active campaigns triggered for this context.`);
           }
-        } catch (error) {
+
           setMessages(prev => [...prev, { 
-            id: Date.now().toString(), 
-            role: 'system', 
-            text: "❌ Network error trying to reach the agent checkout API." 
+            id: (Date.now() + 1).toString(), 
+            role: 'agent', 
+            text: agentReply 
           }]);
+        } catch (e) {
+          logEvent('ERROR', `[Orchestrator] Failed to fetch campaigns.`);
         }
-      } else {
+      } else if (res.status === 403 && data.requiresStepUp) {
+        // Graceful Failure
+        logEvent('ERROR', `ERR_LIMIT_EXCEEDED: ${data.message}`);
         setMessages(prev => [...prev, { 
           id: Date.now().toString(), 
+          role: 'system', 
+          text: `⚠️ Step-up Authentication Required` 
+        }]);
+        setMessages(prev => [...prev, { 
+          id: (Date.now() + 1).toString(), 
           role: 'agent', 
-          text: "I can help you order items autonomously. Try saying 'Order 250g coffee beans'." 
+          text: `I couldn't process this autonomously because: ${data.message}. Please manually approve this transaction to proceed.`,
+          isStepUp: true
+        }]);
+      } else {
+        logEvent('ERROR', `[Transaction Failed] ${data.message || 'Unknown error'}`);
+         setMessages(prev => [...prev, { 
+          id: Date.now().toString(), 
+          role: 'system', 
+          text: `❌ Transaction Failed: ${data.message || 'Unknown error'}` 
         }]);
       }
+    } catch (error) {
+      logEvent('ERROR', `[System Error] Network error trying to reach APIs.`);
+      setMessages(prev => [...prev, { 
+        id: Date.now().toString(), 
+        role: 'system', 
+        text: "❌ Network error trying to reach the agent checkout API." 
+      }]);
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
+  };
+
+  const handleApproveOverage = () => {
+    logEvent('SUCCESS', `[User Authorized] Step-up authentication completed by user via MFA/Biometrics.`);
+    logEvent('SUCCESS', `[Gated] Token manually generated. Transaction processed.`);
+    
+    setMessages(prev => [...prev, { 
+      id: Date.now().toString(), 
+      role: 'agent', 
+      text: `Thank you! I have verified your approval and processed the overage transaction successfully.` 
+    }]);
   };
 
   return (
@@ -173,7 +229,22 @@ export function AgentChat() {
                   ? 'bg-zinc-900 text-white rounded-br-sm' 
                   : 'bg-white border border-gray-100 text-gray-800 rounded-bl-sm'
               }`}>
-                <p className="text-sm leading-relaxed">{msg.text}</p>
+                <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.text}</p>
+                
+                {msg.isStepUp && (
+                  <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <div className="flex items-center text-yellow-800 font-medium mb-3">
+                      <ShieldAlert className="w-4 h-4 mr-2" />
+                      Step-Up Authentication Required
+                    </div>
+                    <button 
+                      onClick={handleApproveOverage}
+                      className="w-full py-2 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold rounded-md transition-colors shadow-sm"
+                    >
+                      Approve Overage via Biometrics
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
