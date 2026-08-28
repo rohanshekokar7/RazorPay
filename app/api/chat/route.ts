@@ -342,8 +342,7 @@ CRITICAL RULES:
         groqMessages.push({
             role: 'tool',
             tool_call_id: call.id,
-            name: call.function.name,
-            content: JSON.stringify(result)
+                        content: JSON.stringify(result)
         });
       }
       
