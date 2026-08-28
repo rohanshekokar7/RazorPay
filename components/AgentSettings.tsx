@@ -39,8 +39,8 @@ export function AgentSettings() {
 
   const [expirationPreset, setExpirationPreset] = useState<string>('custom');
 
-  const handlePresetChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const val = e.target.value;
+  const handlePresetChange = (val: string) => {
+
     setExpirationPreset(val);
     if (val === 'custom') return;
     
