@@ -416,6 +416,13 @@ export function ChatInterface({ onLogsReceived, simulatePaymentTick = 0, externa
                       ? 'bg-blue-600 text-white rounded-tr-sm' 
                       : 'bg-white text-gray-800 border border-gray-100 rounded-tl-sm'
                   }`}>
+                    {msg.imageUrl && (
+                      <img 
+                        src={msg.imageUrl} 
+                        alt="Product" 
+                        className="mb-3 rounded-lg max-w-[250px] w-full object-cover shadow-sm border border-gray-100" 
+                      />
+                    )}
                     {msg.role === 'user' ? (
                       <p className="whitespace-pre-wrap text-sm leading-relaxed">{msg.text}</p>
                     ) : (
@@ -429,7 +436,13 @@ export function ChatInterface({ onLogsReceived, simulatePaymentTick = 0, externa
                             p: ({node, ...props}) => <p className="mb-2 last:mb-0 whitespace-pre-wrap" {...props} />,
                             ul: ({node, ...props}) => <ul className="list-disc pl-5 mb-2" {...props} />,
                             ol: ({node, ...props}) => <ol className="list-decimal pl-5 mb-2" {...props} />,
-                            li: ({node, ...props}) => <li className="mb-1" {...props} />
+                            li: ({node, ...props}) => <li className="mb-1" {...props} />,
+                            img: ({node, ...props}) => (
+                              <img 
+                                className="rounded-lg max-w-[250px] w-full object-cover shadow-sm border border-gray-100 my-3 block" 
+                                {...props} 
+                              />
+                            )
                           }}
                         >
                           {msg.text}
@@ -459,13 +472,6 @@ export function ChatInterface({ onLogsReceived, simulatePaymentTick = 0, externa
                       title={msg.paymentLink.title} 
                     />
                   )}
-                    {msg.imageUrl && (
-                      <img 
-                        src={msg.imageUrl} 
-                        alt="Product" 
-                        className="mt-3 rounded-lg max-w-[250px] w-full object-cover shadow-sm border border-gray-100" 
-                      />
-                    )}
                     {msg.approvalRequest && (
                       <div className="mt-4 p-4 bg-white border border-gray-200 rounded-lg shadow-sm w-full min-w-[250px]">
                         <div className="font-semibold text-gray-800 mb-1">Confirm Purchase</div>

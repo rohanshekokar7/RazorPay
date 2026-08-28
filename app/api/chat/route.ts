@@ -186,8 +186,11 @@ CRITICAL RULES:
 7. ORDER CANCELLATIONS: If a user asks to cancel an order or return an item, you MUST first ask them for their reason for cancellation. DO NOT proceed with the cancellation or use the 'process_refund' tool until they have provided a reason. Once they provide a reason, use the 'lookup_order' tool to find it, and then use the 'process_refund' tool to issue their refund via Razorpay. Explain to the user that the refund will reflect in 5-7 days.
 8. TWO-STEP CHECKOUT: When a user asks to buy something, if it is ambiguous (e.g., multiple items match), FIRST use check_inventory and ask the user WHICH SPECIFIC ITEM they want to buy. Wait for their answer.
 9. ONCE THE USER CONFIRMS the exact item they want to buy, DO NOT GENERATE A PAYMENT LINK. You MUST call the 'request_purchase_approval' tool to ask the user for explicit UI confirmation.
-10. If the user asks to see an image or picture of a product, you MUST use the show_product_image tool.
-11. Use the provided tools to perform these actions.`;
+10. If the user asks to see an image or picture of a product, you MUST use the show_product_image tool. DO NOT include ANY image Markdown or HTML tags in your text response. The system will automatically display the image above your text.
+11. When showing a product, structure your text response in this EXACT order: 
+    1) First, the description of the product.
+    2) Second, information about the discount or offers.
+12. Use the provided tools to perform these actions.`;
 
     // Map the incoming UI messages to Groq format
     const groqMessages: Groq.Chat.Completions.ChatCompletionMessageParam[] = messages.map((m: any) => ({
