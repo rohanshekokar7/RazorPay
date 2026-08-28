@@ -2,6 +2,7 @@ import { Navbar } from '@/components/Navbar';
 import Link from 'next/link';
 import prisma from '@/lib/prisma';
 import { CancelOrderButton } from '@/components/CancelOrderButton';
+import { getImageUrl } from '@/lib/getImageUrl';
 
 export const dynamic = 'force-dynamic';
 
@@ -85,8 +86,12 @@ export default async function OrdersPage() {
                   </div>
                   
                   <div className="flex flex-col sm:flex-row gap-6 mb-4">
-                    <div className="w-24 h-24 bg-gray-50 border border-gray-100 rounded-md flex items-center justify-center text-4xl shrink-0">
-                      📦
+                    <div className="w-24 h-24 bg-gray-50 border border-gray-100 rounded-md flex items-center justify-center shrink-0 overflow-hidden">
+                      <img 
+                        src={getImageUrl(order.itemName, 96, 96)} 
+                        alt={order.itemName} 
+                        className="w-full h-full object-cover" 
+                      />
                     </div>
                     <div className="flex-1">
                       <Link href="/" className="text-blue-600 hover:underline hover:text-orange-700 font-medium line-clamp-2 mb-1">
