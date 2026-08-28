@@ -459,8 +459,11 @@ export function ChatInterface({ onLogsReceived, simulatePaymentTick = 0, externa
                             ol: ({node, ...props}) => <ol className="list-decimal pl-5 mb-2" {...props} />,
                             li: ({node, ...props}) => <li className="mb-1" {...props} />,
                             img: ({node, alt, src, ...props}) => {
-                              // Always use getImageUrl to guarantee a valid image, ignoring hallucinated paths
-                              const finalSrc = getImageUrl(alt && alt !== 'Product' ? alt : "Product", 400, 300);
+                              // If it's a real external URL from our DB (e.g. flixcart or unsplash), use it.
+                              let finalSrc = src;
+                              if (!src || src.startsWith('/') || src.includes('example.com') || src.includes('placeholder')) {
+                                finalSrc = getImageUrl(alt && alt !== 'Product' ? alt : "Product", 400, 300);
+                              }
                               return (
                                 <img 
                                   className="rounded-lg max-w-[250px] w-full object-cover shadow-sm border border-gray-100 my-3 block" 

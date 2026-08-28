@@ -250,6 +250,7 @@ CRITICAL RULES:
                         description: p.description,
                         price: p.price,
                         in_stock: p.inStock,
+                        image_url: p.imageUrl,
                         accessory: accessoryName
                     };
                 }));
@@ -366,7 +367,17 @@ CRITICAL RULES:
             }
         } else if (name === 'show_product_image') {
             addLog(`Calling show_product_image`, 'INFO', `Fetching image for ${args.product_name}`);
-            imageUrl = getImageUrl(args.product_name, 400, 300);
+            
+            const productMatch = await prisma.product.findFirst({
+                where: { name: { contains: args.product_name } }
+            });
+            
+            if (productMatch && productMatch.imageUrl) {
+                imageUrl = productMatch.imageUrl;
+            } else {
+                imageUrl = getImageUrl(args.product_name, 400, 300);
+            }
+            
             result = { success: true, message: `Image for ${args.product_name} will be displayed to the user.` };
             addLog(`Tool Success: ${name}`, 'SUCCESS', `Image ready for ${args.product_name}`);
         } else {
