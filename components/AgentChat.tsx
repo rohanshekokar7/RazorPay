@@ -310,7 +310,7 @@ export function AgentChat({ onLog }: AgentChatProps) {
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="E.g., Order my usual 250g coffee beans..."
+            placeholder="Write what you want to buy..."
             className="w-full rounded-full border border-gray-300 bg-gray-50 py-3 pl-5 pr-12 text-sm focus:border-cyan-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-cyan-500 transition-all text-black"
             disabled={isLoading}
           />
