@@ -43,6 +43,26 @@ export function ChatInterface({ onLogsReceived, simulatePaymentTick = 0, externa
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
+  useEffect(() => {
+    const saved = localStorage.getItem('agentic_chat_messages');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.length > 0) {
+          setMessages(parsed);
+        }
+      } catch (e) {
+        console.error('Failed to parse saved chat messages', e);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (messages.length > 1 || (messages.length === 1 && messages[0].id !== 'initial')) {
+      localStorage.setItem('agentic_chat_messages', JSON.stringify(messages));
+    }
+  }, [messages]);
+  
   // Track previous tick to avoid duplicate runs
   const prevTickRef = useRef(simulatePaymentTick);
 
