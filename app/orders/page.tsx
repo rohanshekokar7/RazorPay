@@ -101,9 +101,6 @@ export default async function OrdersPage() {
                       <p className="text-sm font-semibold mb-2">₹{order.amount.toFixed(2)}</p>
                       
                       <div className="flex items-center gap-2 mb-3">
-                        <button className="bg-yellow-400 hover:bg-yellow-500 border border-yellow-500 rounded-full px-4 py-1.5 text-sm font-medium shadow-sm transition-colors">
-                          Buy it again
-                        </button>
                         <button className="bg-white hover:bg-gray-50 border border-gray-300 rounded-full px-4 py-1.5 text-sm font-medium shadow-sm transition-colors">
                           View your item
                         </button>
