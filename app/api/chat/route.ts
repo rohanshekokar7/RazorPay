@@ -9,10 +9,7 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET || 'mock_key_secret',
 });
 
-import { PrismaClient } from '@prisma/client';
-import { getImageUrl } from '@/lib/getImageUrl';
-
-const prisma = new PrismaClient();
+import prisma from '@/lib/prisma';
 
 // Tool declarations for Groq
 const tools: Groq.Chat.Completions.ChatCompletionTool[] = [

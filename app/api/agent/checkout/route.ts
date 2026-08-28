@@ -1,14 +1,6 @@
 import { NextResponse } from 'next/server';
 import Razorpay from 'razorpay';
-import { PrismaClient } from '@prisma/client';
-
-// Initialize Razorpay
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_mock',
-  key_secret: process.env.RAZORPAY_KEY_SECRET || 'secret_mock',
-});
-
-const prisma = new PrismaClient();
+import prisma from '@/lib/prisma';
 
 // Allowed tokens for agents
 const ALLOWED_AGENT_TOKENS = ['test_agent_token_123'];

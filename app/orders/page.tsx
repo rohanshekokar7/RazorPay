@@ -1,9 +1,6 @@
 import { Navbar } from '@/components/Navbar';
 import Link from 'next/link';
-import { PrismaClient } from '@prisma/client';
-import { CancelOrderButton } from '@/components/CancelOrderButton';
-
-const prisma = new PrismaClient();
+import prisma from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 
