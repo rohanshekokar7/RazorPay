@@ -8,21 +8,23 @@ import { Navbar } from '@/components/Navbar';
 
 export default function AgentToAgentCommercePage() {
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center">
+    <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
       
       {/* Header section */}
-      <Navbar globalSearch="" setGlobalSearch={() => {}} />
+      <div className="shrink-0">
+        <Navbar globalSearch="" setGlobalSearch={() => {}} />
+      </div>
 
       {/* Main content grid */}
-      <div className="w-full max-w-[1200px] px-4 py-8 md:py-12 flex flex-col lg:flex-row gap-6">
+      <div className="flex-1 w-full max-w-[1200px] mx-auto px-4 py-6 flex flex-col lg:flex-row gap-6 min-h-0">
         
         {/* Left Column: Settings */}
-        <div className="w-full lg:w-1/3 flex flex-col h-[700px]">
+        <div className="w-full lg:w-1/3 flex flex-col h-full min-h-0">
           <AgentSettings />
         </div>
 
         {/* Right Column: Chat */}
-        <div className="w-full lg:w-2/3 flex flex-col h-[700px]">
+        <div className="w-full lg:w-2/3 flex flex-col h-full min-h-0">
           <AgentChat />
         </div>
 
