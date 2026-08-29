@@ -74,9 +74,7 @@ export async function POST(request: Request) {
         amount: parseFloat(amount),
         status: 'Processing',
         orderDate: orderDate,
-        expectedDeliveryDate: expectedDeliveryDate,
-        isAutonomous: !bypassMandate,
-        paymentId: mockPaymentId
+        expectedDeliveryDate: expectedDeliveryDate
       }
     });
 
@@ -94,7 +92,7 @@ export async function POST(request: Request) {
   } catch (error: any) {
     console.error('Agent checkout error:', error);
     return NextResponse.json(
-      { status: 'error', message: 'Internal Server Error' }, 
+      { status: 'error', message: error.message }, 
       { status: 500 }
     );
   }
