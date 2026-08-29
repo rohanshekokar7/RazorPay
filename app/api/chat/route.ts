@@ -16,17 +16,17 @@ const tools: Groq.Chat.Completions.ChatCompletionTool[] = [
   {
     type: 'function',
     function: {
-      name: 'check_inventory',
-      description: 'Checks the inventory for a specific item and retrieves related accessories.',
+      name: 'query_catalog',
+      description: 'Search the merchant database for a product and its upsell accessories.',
       parameters: {
         type: 'object',
         properties: {
-          item: {
+          search_term: {
             type: 'string',
-            description: 'The name of the item to check.',
+            description: 'The name of the product the user wants.',
           },
         },
-        required: ['item'],
+        required: ['search_term'],
       },
     }
   },
@@ -76,20 +76,27 @@ const tools: Groq.Chat.Completions.ChatCompletionTool[] = [
     type: 'function',
     function: {
       name: 'generate_razorpay_link',
-      description: 'Generates a payment link for a specific item (or combined items) and amount. Call this only when the user explicitly asks for a payment link after approval.',
+      description: 'Triggered ONLY after the user confirms their final cart selection. Sends the requested cart to the backend for price validation and Razorpay link generation.',
       parameters: {
         type: 'object',
         properties: {
-          item: {
-            type: 'string',
-            description: 'The name of the item(s).',
-          },
-          amount: {
-            type: 'number',
-            description: 'The total amount to charge the user.',
-          },
+          line_items: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                item_id: { type: 'string', description: 'The unique ID of the product from the catalog.' },
+                quantity: { type: 'number', description: 'Number of units.' },
+                requested_discount_percentage: { 
+                  type: 'number', 
+                  description: 'Discount requested by the agent (Max 10). Must be 0 for primary items.' 
+                }
+              },
+              required: ['item_id', 'quantity', 'requested_discount_percentage']
+            }
+          }
         },
-        required: ['item', 'amount'],
+        required: ['line_items']
       },
     }
   },
@@ -151,13 +158,25 @@ const tools: Groq.Chat.Completions.ChatCompletionTool[] = [
         required: ['product_name'],
       },
     }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_active_promotions',
+      description: 'Fetch the active marketing campaigns and discounts from the merchant database to offer to the user.',
+      parameters: {
+        type: 'object',
+        properties: {},
+        required: [],
+      }
+    }
   }
 ];
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { messages } = body; 
+    const { messages, mandateActive } = body; 
 
     let auditLogs: Array<{ id: string, timestamp: string, step: string, status: "INFO" | "SUCCESS" | "ERROR", details: string }> = [];
     let paymentLink: { url: string, amount: number, title: string } | null = null;
@@ -178,23 +197,38 @@ export async function POST(req: Request) {
     const latestMessageText = messages[messages.length - 1].parts[0].text;
     addLog('Received Request', 'INFO', `Received user message: ${latestMessageText}`);
 
-    const systemInstruction = `You are a helpful and expert AI store clerk for a modern e-commerce store. 
-You can recommend products, check inventory, calculate discounts, generate payment links, and process refunds/cancellations.
-CRITICAL RULES:
-1. CROSS-SELL REQUIREMENT: Whenever a user asks to buy an item, you MUST check the inventory for a logically related accessory (returned by the check_inventory tool) and naturally suggest adding it to the order to increase total revenue, BEFORE generating the payment link.
-2. When checking inventory, use ONLY the core product name as the search item (e.g. use "Sneakers" instead of "Sneakers priced at ₹500"). If the item is not found in inventory, DO NOT GIVE UP. Simply proceed using the item name and price the user specified.
-3. If the user wants to buy a product of 100 or less, you MUST suggest buying another item to increase their total bill and tell them they will get a discount of 10% on the total.
-4. If the product is expensive (e.g. > 100), you MUST tell the user that they can get cashback or a discount by paying with a credit card, or get discounts by paying with UPI.
-5. You must explicitly explain every money action in the chat.
-6. If a "Payment Success Webhook" message is received, thank the user and confirm their order is being shipped.
-7. ORDER CANCELLATIONS: If a user asks to cancel an order or return an item, you MUST first ask them for their reason for cancellation. DO NOT proceed with the cancellation or use the 'process_refund' tool until they have provided a reason. Once they provide a reason, use the 'lookup_order' tool to find it, and then use the 'process_refund' tool to issue their refund via Razorpay. Explain to the user that the refund will reflect in 5-7 days.
-8. TWO-STEP CHECKOUT: When a user asks to buy something, if it is ambiguous (e.g., multiple items match), FIRST use check_inventory and ask the user WHICH SPECIFIC ITEM they want to buy. Wait for their answer.
-9. ONCE THE USER CONFIRMS the exact item they want to buy, DO NOT GENERATE A PAYMENT LINK. You MUST call the 'request_purchase_approval' tool to ask the user for explicit UI confirmation.
-10. If the user asks to see an image or picture of a product, you MUST use the show_product_image tool. DO NOT include ANY image Markdown or HTML tags in your text response. The system will automatically display the image above your text.
-11. When showing a product, structure your text response in this EXACT order: 
-    1) First, the description of the product.
-    2) Second, information about the discount or offers.
-12. Use the provided tools to perform these actions.`;
+    const systemInstruction = `You are an autonomous, high-conversion Agentic Commerce Assistant operating on behalf of the merchant. Your objective is to seamlessly facilitate user purchases while maximizing Average Order Value (AOV) through contextual upselling and cross-selling.
+
+You are equipped with two essential tools:
+1. 'query_catalog(search_term)': Retrieves product details, pricing (in INR), availability, and a list of 'upsell_targets' (complementary accessories or warranties).
+2. 'generate_razorpay_link(line_items)': Generates the final checkout URL. The 'line_items' array must contain objects with 'item_id', 'quantity', and 'requested_discount_percentage'.
+
+### CORE WORKFLOW (MUST BE FOLLOWED STRICTLY)
+
+**Phase 1: Intent & Catalog Retrieval**
+When a user indicates they want to buy a product, immediately use 'query_catalog' to fetch the primary item and its associated 'upsell_targets'. Do not mention pricing until you have retrieved the latest catalog data.
+
+**Phase 2: The Mandatory Upsell Pitch**
+Before calling 'generate_razorpay_link', you MUST attempt to bundle the primary product with 1 or 2 items from the 'upsell_targets'. 
+- State the price of the primary item.
+- Pitch the related accessories with a clear, logical benefit (e.g., "Since this device doesn't include a protective case, I highly recommend adding one...").
+- You are authorized to offer up to a maximum 10% discount ONLY on the accessory/upsell items. The primary item price is strictly non-negotiable.
+- End your response by asking the user to make a choice: "Would you like me to generate the payment link for just the [Primary Item], or the bundled package with the 10% accessory discount?"
+
+**Phase 3: Wait for Confirmation**
+Halt generation. You must explicitly wait for the user to confirm their cart contents. Do not assume their answer. 
+
+**Phase 4: Execution & Handoff**
+Once the user confirms (either the single item or the bundle), invoke 'generate_razorpay_link' with the agreed-upon items. 
+- Pass the standard price for the primary item ('requested_discount_percentage: 0').
+- Pass the negotiated discount for the accessories (e.g., 'requested_discount_percentage: 10').
+
+### FINANCIAL GUARDRAILS & SECURITY RULES
+- **No Hallucinations:** Never invent products, features, or base prices. If an item is not returned by 'query_catalog', inform the user it is out of stock or unavailable.
+- **Strict Discount Caps:** You cannot authorize a discount greater than 10%, and it can never be applied to a primary product. If a user demands a 50% discount or a cheaper primary item, firmly decline: "I am unable to authorize custom discounts beyond our standard 10% bundle offer on accessories."
+- **Backend Supremacy:** Acknowledge that your 'requested_discount_percentage' is a request. The final authorization happens on the server. Do not promise the user a final total until the 'generate_razorpay_link' tool returns the verified Razorpay URL and final calculated amount.
+- **Markdown Image Rendering (MANDATORY):** Whenever you list or mention a product, you MUST format its name as a clickable link pointing to its image: \`[Product Name](image_url)\`. If using a table, do NOT include Image or Stock columns. Only list the Product and Price. Do NOT use HTML tags.
+- Process refunds via 'process_refund' if they want to cancel an order.`;
 
     // Map the incoming UI messages to Groq format
     const groqMessages: Groq.Chat.Completions.ChatCompletionMessageParam[] = messages.map((m: any) => ({
@@ -232,38 +266,60 @@ CRITICAL RULES:
         
         addLog(`Executing Tool: ${name}`, 'INFO', `Arguments: ${JSON.stringify(args)}`);
         
-        if (name === 'check_inventory') {
-            const products = await prisma.product.findMany({
-                where: {
-                    name: {
-                        contains: args.item
-                    }
+        if (name === 'query_catalog') {
+            const searchTerms = args.search_term ? args.search_term.replace(/['’‘“”]/g, "").split(/[\s-]+/).filter((w: string) => w.length > 2).slice(0, 3) : [];
+            
+            let products = await prisma.product.findMany({
+                where: searchTerms.length > 0 ? {
+                    inStock: true,
+                    AND: searchTerms.map((term: string) => ({
+                        name: { contains: term }
+                    }))
+                } : {
+                    name: { contains: args.search_term || '' },
+                    inStock: true
                 },
                 take: 5
             });
             
+            // Fallback if no exact match: try just the first significant word
+            if (products.length === 0 && searchTerms.length > 1) {
+                products = await prisma.product.findMany({
+                    where: { name: { contains: searchTerms[0] }, inStock: true },
+                    take: 5
+                });
+            }
+            
             if (products.length > 0) {
                 const formattedProducts = await Promise.all(products.map(async (p) => {
-                    let accessoryName = 'None available';
+                    let upsell_targets: any[] = [];
                     if (p.accessoryId) {
                         const accessory = await prisma.product.findUnique({ where: { id: p.accessoryId } });
-                        if (accessory) accessoryName = accessory.name;
+                        if (accessory) {
+                            upsell_targets.push({
+                                item_id: accessory.id,
+                                name: accessory.name,
+                                price: accessory.price,
+                                description: accessory.description
+                            });
+                        }
                     }
                     return {
+                        item_id: p.id,
                         name: p.name,
                         description: p.description,
                         price: p.price,
                         in_stock: p.inStock,
                         image_url: p.imageUrl,
-                        accessory: accessoryName
+                        upsell_targets: upsell_targets
                     };
                 }));
                 
                 result = { products: formattedProducts };
-                addLog(`Tool Success: ${name}`, 'SUCCESS', `Found ${products.length} products matching "${args.item}"`);
+                addLog(`Tool Success: ${name}`, 'SUCCESS', `Found ${products.length} products matching "${args.search_term}" with upsell targets.`);
             } else {
                 result = { in_stock: false, error: "Item not found in inventory catalog." };
-                addLog(`Tool Success: ${name}`, 'SUCCESS', `Inventory checked for ${args.item}. Item not found.`);
+                addLog(`Tool Success: ${name}`, 'SUCCESS', `Catalog queried for ${args.search_term}. Item not found.`);
             }
         } 
         else if (name === 'calculate_upsell_discount') {
@@ -276,57 +332,91 @@ CRITICAL RULES:
             addLog(`Tool Success: ${name}`, 'SUCCESS', `Requested UI approval for ${args.item} at ₹${args.amount}`);
         }
         else if (name === 'generate_razorpay_link') {
-            const amountCheckLog = `[GUARDRAIL CHECK] Requested: ₹${args.amount} | Limit: ₹1000000 | Status: ${args.amount > 1000000 ? 'REJECTED' : 'PASSED'}`;
+            let totalAmount = 0;
+            let itemNames: string[] = [];
+            let guardrailPassed = true;
+            let guardrailError = '';
             
-            if (args.amount > 1000000) {
+            for (const item of args.line_items) {
+                const product = await prisma.product.findUnique({ where: { id: item.item_id } });
+                if (!product) {
+                    guardrailPassed = false;
+                    guardrailError = `Product with ID ${item.item_id} not found in database.`;
+                    break;
+                }
+                
+                const discount = item.requested_discount_percentage || 0;
+                if (discount > 10) {
+                    guardrailPassed = false;
+                    guardrailError = `Security Guardrail: Discount of ${discount}% exceeds maximum allowed limit of 10%.`;
+                    break;
+                }
+                
+                const discountedPrice = product.price * (1 - (discount / 100));
+                totalAmount += discountedPrice * item.quantity;
+                itemNames.push(`${product.name} (x${item.quantity})`);
+                
+                addLog(`Price Validation`, 'SUCCESS', `Validated ${product.name}: ₹${product.price} - ${discount}% discount = ₹${discountedPrice.toFixed(2)}`);
+            }
+            
+            const combinedItemName = itemNames.join(', ');
+            
+            const amountCheckLog = `[GUARDRAIL CHECK] Requested Total: ₹${totalAmount.toFixed(2)} | Limit: ₹1000000 | Status: ${totalAmount > 1000000 ? 'REJECTED' : 'PASSED'}`;
+            
+            if (!guardrailPassed) {
+                result = { error: guardrailError };
+                addLog(`Guardrail Triggered`, 'ERROR', guardrailError);
+            }
+            else if (totalAmount > 1000000) {
                 result = { error: 'Order total exceeds maximum allowed amount of ₹1000000. Guardrail enforced.' };
                 addLog(`Guardrail Triggered`, 'ERROR', amountCheckLog);
             } else {
                 addLog(`Guardrail Passed`, 'SUCCESS', amountCheckLog);
                 
-                if (args.item.toLowerCase().includes('limited edition sneakers')) {
-                    addLog(`Tool Error: ${name}`, 'ERROR', `Simulated 500 Internal Server Error / API Timeout from Razorpay for ${args.item}`);
-                    result = { error: 'Razorpay API 500: Internal Server Error. Timeout while generating link. Please offer a 10% discount on another item as an apology.' };
+                if (mandateActive) {
+                    approvalRequest = { item: combinedItemName, amount: totalAmount, category: "A2A Agent Checkout" };
+                    result = { success: true, message: `A2A Mandate Active. An approval card for ₹${totalAmount} has been sent to the user. Do not generate a Razorpay link.` };
+                    addLog(`A2A Routing`, 'INFO', `Routed to A2A mandate since user has active balance.`);
                 } else {
                     try {
-                        const linkData = {
-                          amount: Math.round(args.amount * 100), // Razorpay accepts amounts in paise
-                          currency: "INR", // Changed to INR to enable UPI, QR Code, and domestic payment options
-                          accept_partial: false,
-                          description: `Buy BuDDY AI Order: ${args.item}. Thank you for shopping with us!`,
-                          customer: {
-                            name: "Agentic Shopper",
-                            email: "shopper@example.com",
-                            contact: "+919876543210"
-                          },
-                          notify: { sms: false, email: false },
-                          reminder_enable: false,
-                          notes: {
-                            store: "Buy BuDDY AI",
-                            item: args.item,
-                            support: "support@buybuddy.ai"
-                          }
-                        };
-                        
-                        addLog(`Calling Razorpay SDK`, 'INFO', `Creating payment link for ₹${args.amount}`);
-                        
-                        let short_url = `https://rzp.io/test/${Math.random().toString(36).substring(7)}`;
-                        
-                        const rzpKey = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
-                        if (rzpKey && rzpKey !== 'mock_key_id') {
-                             const rzpResponse = await razorpay.paymentLink.create(linkData);
-                             short_url = rzpResponse.short_url;
-                        } else {
-                             addLog(`Razorpay Warning`, 'INFO', `RAZORPAY_KEY_ID missing in .env.local. Using mock URL.`);
-                        }
+                    const linkData = {
+                      amount: Math.round(totalAmount * 100), // Razorpay accepts amounts in paise
+                      currency: "INR",
+                      accept_partial: false,
+                      description: `Agentic Bundle Order: ${combinedItemName}`,
+                      customer: {
+                        name: "Agentic Shopper",
+                        email: "shopper@example.com",
+                        contact: "+919876543210"
+                      },
+                      notify: { sms: false, email: false },
+                      reminder_enable: false,
+                      notes: {
+                        store: "Buy BuDDY AI",
+                        items: combinedItemName,
+                        support: "support@buybuddy.ai"
+                      }
+                    };
+                    
+                    addLog(`Calling Razorpay SDK`, 'INFO', `Creating payment link for ₹${totalAmount.toFixed(2)}`);
+                    
+                    let short_url = `https://rzp.io/test/${Math.random().toString(36).substring(7)}`;
+                    
+                    const rzpKey = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+                    if (rzpKey && rzpKey !== 'mock_key_id') {
+                         const rzpResponse = await razorpay.paymentLink.create(linkData);
+                         short_url = rzpResponse.short_url;
+                    } else {
+                         addLog(`Razorpay Warning`, 'INFO', `RAZORPAY_KEY_ID missing in .env.local. Using mock URL.`);
+                    }
 
-                        paymentLink = {
-                            url: short_url,
-                            amount: args.amount,
-                            title: `Payment for ${args.item}`
-                        };
-                        result = { success: true, payment_url: paymentLink.url, amount: args.amount };
-                        addLog(`Tool Success: ${name}`, 'SUCCESS', `Generated Razorpay link: ${short_url}`);
+                    paymentLink = {
+                        url: short_url,
+                        amount: Math.round(totalAmount),
+                        title: `Payment for ${combinedItemName}`
+                    };
+                    result = { success: true, payment_url: paymentLink.url, amount: totalAmount };
+                    addLog(`Tool Success: ${name}`, 'SUCCESS', `Generated Razorpay link: ${short_url}`);
                     } catch (rzpError: any) {
                         addLog(`Razorpay SDK Error`, 'ERROR', rzpError.message || 'Unknown error');
                         result = { error: `Razorpay Error: ${rzpError.message}` };
@@ -383,7 +473,7 @@ CRITICAL RULES:
                 });
                 
                 if (productMatch && productMatch.imageUrl) {
-                    imageUrl = productMatch.imageUrl.replace('http://', 'https://');
+                    imageUrl = productMatch.imageUrl;
                 } else {
                     imageUrl = getImageUrl(args.product_name, 400, 300);
                 }
@@ -391,6 +481,11 @@ CRITICAL RULES:
             
             result = { success: true, message: `Image for ${args.product_name} will be displayed to the user.` };
             addLog(`Tool Success: ${name}`, 'SUCCESS', `Image ready for ${args.product_name}`);
+        } else if (name === 'get_active_promotions') {
+            addLog(`Calling get_active_promotions`, 'INFO', `Fetching active marketing campaigns from the database.`);
+            const campaigns = await prisma.campaign.findMany({ where: { isActive: true } });
+            result = campaigns;
+            addLog(`Tool Success: ${name}`, 'SUCCESS', `Found ${campaigns.length} active campaigns.`);
         } else {
             result = { error: 'Unknown function' };
         }

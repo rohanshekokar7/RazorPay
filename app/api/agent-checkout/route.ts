@@ -49,6 +49,24 @@ export async function POST(request: Request) {
     const expectedDeliveryDate = new Date();
     expectedDeliveryDate.setDate(orderDate.getDate() + 3);
 
+    // Generate mock Razorpay A2A Server execution payload
+    const mockPaymentId = `pay_${Math.random().toString(36).substring(7)}`;
+    const razorpayPayload = {
+      id: mockPaymentId,
+      entity: "payment",
+      amount: amount * 100, // paise
+      currency: "INR",
+      status: "captured",
+      method: "upi",
+      description: `A2A Purchase: ${itemName}`,
+      recurring: true,
+      token_id: `token_${Math.random().toString(36).substring(7)}`,
+      notes: {
+        agent_id: "ai_clerk_001",
+        autonomous: !bypassMandate
+      }
+    };
+
     // Save to Database
     const order = await prisma.order.create({
       data: {
@@ -56,7 +74,9 @@ export async function POST(request: Request) {
         amount: parseFloat(amount),
         status: 'Processing',
         orderDate: orderDate,
-        expectedDeliveryDate: expectedDeliveryDate
+        expectedDeliveryDate: expectedDeliveryDate,
+        isAutonomous: !bypassMandate,
+        paymentId: mockPaymentId
       }
     });
 
@@ -65,7 +85,8 @@ export async function POST(request: Request) {
       { 
         status: 'success', 
         message: 'Agent Authorized Payment processed successfully without manual intervention.',
-        transactionId: order.id
+        transactionId: order.id,
+        razorpayPayload
       }, 
       { status: 200 }
     );

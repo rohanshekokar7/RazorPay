@@ -36,4 +36,15 @@ model Order {
   orderDate            DateTime  @default(now())
   expectedDeliveryDate DateTime?
   userId               String?
+  isAutonomous         Boolean   @default(false)
+  paymentId            String?
+}
+
+model Campaign {
+  id                 String   @id @default(uuid())
+  name               String
+  description        String
+  discountPercentage Float
+  triggerKeyword     String?
+  isActive           Boolean  @default(true)
 }

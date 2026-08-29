@@ -31,6 +31,7 @@ export function ChatInterface({ onLogsReceived, simulatePaymentTick = 0, externa
   const { mandate, deductFromLimit } = useAgent();
   const [showSettings, setShowSettings] = useState(false);
   const [pendingTx, setPendingTx] = useState<{ amount: number, category: string, itemName: string } | null>(null);
+  const [popupImage, setPopupImage] = useState<string | null>(null);
 
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -110,7 +111,7 @@ export function ChatInterface({ onLogsReceived, simulatePaymentTick = 0, externa
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: apiMessages })
+        body: JSON.stringify({ messages: apiMessages, mandateActive: mandate.isActive })
       });
 
       if (!res.ok) throw new Error('API request failed');
@@ -169,7 +170,7 @@ export function ChatInterface({ onLogsReceived, simulatePaymentTick = 0, externa
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: apiMessages })
+        body: JSON.stringify({ messages: apiMessages, mandateActive: mandate.isActive })
       });
 
       if (!res.ok) throw new Error('API request failed');
@@ -239,6 +240,10 @@ export function ChatInterface({ onLogsReceived, simulatePaymentTick = 0, externa
       const data = await res.json();
       
       if (res.ok && data.status === 'success') {
+        if (onLogsReceived && data.razorpayPayload) {
+          onLogsReceived([{ timestamp: new Date().toISOString(), level: 'INFO', message: `[Razorpay API] POST /v1/payments/create_recurring\n${JSON.stringify(data.razorpayPayload, null, 2)}` } as any]);
+          onLogsReceived([{ timestamp: new Date().toISOString(), level: 'SUCCESS', message: `[Razorpay API] Recurring payment ${data.razorpayPayload.id} captured successfully.` } as any]);
+        }
         setMessages(prev => [...prev, { 
           id: Date.now().toString(), 
           role: 'model', 
@@ -288,7 +293,13 @@ export function ChatInterface({ onLogsReceived, simulatePaymentTick = 0, externa
         const data = await res.json();
 
         if (res.ok && data.status === 'success') {
-           if (onLogsReceived) onLogsReceived([{ timestamp: new Date().toISOString(), level: 'SUCCESS', message: `[Bounded Check Passed] ₹${req.amount} used -> [Gated] Token generated.` } as any]);
+           if (onLogsReceived) {
+             onLogsReceived([{ timestamp: new Date().toISOString(), level: 'SUCCESS', message: `[Bounded Check Passed] ₹${req.amount} used -> [Gated] Token generated.` } as any]);
+             if (data.razorpayPayload) {
+               onLogsReceived([{ timestamp: new Date().toISOString(), level: 'INFO', message: `[Razorpay API] POST /v1/payments/create_recurring\n${JSON.stringify(data.razorpayPayload, null, 2)}` } as any]);
+               onLogsReceived([{ timestamp: new Date().toISOString(), level: 'SUCCESS', message: `[Razorpay API] UAP A2A payment ${data.razorpayPayload.id} captured successfully.` } as any]);
+             }
+           }
            
            deductFromLimit(req.amount);
            setMessages(prev => [...prev, { 
@@ -454,7 +465,7 @@ export function ChatInterface({ onLogsReceived, simulatePaymentTick = 0, externa
                   }`}>
                     {msg.imageUrl && (
                       <img 
-                        src={msg.imageUrl} 
+                        src={msg.imageUrl.startsWith('http://img') ? `https://images.weserv.nl/?url=${encodeURIComponent(msg.imageUrl)}` : msg.imageUrl} 
                         alt="Product" 
                         className="mb-3 rounded-lg max-w-[250px] w-full object-cover shadow-sm border border-gray-100" 
                       />
@@ -473,11 +484,42 @@ export function ChatInterface({ onLogsReceived, simulatePaymentTick = 0, externa
                             ul: ({node, ...props}) => <ul className="list-disc pl-5 mb-2" {...props} />,
                             ol: ({node, ...props}) => <ol className="list-decimal pl-5 mb-2" {...props} />,
                             li: ({node, ...props}) => <li className="mb-1" {...props} />,
+                            a: ({node, href, children, ...props}) => {
+                              const getProxiedUrl = (u: string) => {
+                                if (u.startsWith('http://img')) return `https://images.weserv.nl/?url=${encodeURIComponent(u)}`;
+                                return u;
+                              };
+                              const targetHref = href ? getProxiedUrl(href) : href;
+                              const isImageLink = targetHref && (targetHref.includes('images.weserv.nl') || targetHref.match(/\.(jpeg|jpg|gif|png)$/i));
+                              
+                              if (isImageLink) {
+                                return (
+                                  <a 
+                                    href="#" 
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      setPopupImage(targetHref);
+                                    }} 
+                                    className="text-blue-600 hover:underline font-medium cursor-pointer" 
+                                    {...props}
+                                  >
+                                    {children}
+                                  </a>
+                                );
+                              }
+                              return <a href={targetHref} className="text-blue-600 hover:underline font-medium" {...props}>{children}</a>;
+                            },
                             img: ({node, alt, src, ...props}) => {
-                              // If it's a real external URL from our DB (e.g. flixcart or unsplash), use it.
+                              const getProxiedUrl = (u: string) => {
+                                if (u.startsWith('http://img')) return `https://images.weserv.nl/?url=${encodeURIComponent(u)}`;
+                                return u;
+                              };
                               let finalSrc = src;
-                              if (!src || src.startsWith('/') || src.includes('example.com') || src.includes('placeholder')) {
+                              const srcStr = typeof src === 'string' ? src : '';
+                              if (!srcStr || srcStr.startsWith('/') || srcStr.includes('example.com') || srcStr.includes('placeholder')) {
                                 finalSrc = getImageUrl(alt && alt !== 'Product' ? alt : "Product", 400, 300);
+                              } else {
+                                finalSrc = getProxiedUrl(srcStr);
                               }
                               return (
                                 <img 
@@ -578,6 +620,32 @@ export function ChatInterface({ onLogsReceived, simulatePaymentTick = 0, externa
           </button>
         </form>
       </div>
+      
+      <AnimatePresence>
+        {popupImage && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setPopupImage(null)}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+          >
+            <div className="relative max-w-4xl max-h-[90vh] w-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+              <button 
+                onClick={() => setPopupImage(null)}
+                className="absolute -top-12 right-0 text-white hover:text-gray-300 transition-colors p-2"
+              >
+                <X size={32} />
+              </button>
+              <img 
+                src={popupImage} 
+                alt="Enlarged view" 
+                className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

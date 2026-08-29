@@ -10,9 +10,17 @@ export function ProductImage({ product, width = 400, height = 300, className = "
   const [src, setSrc] = useState(defaultSrc);
   const [error, setError] = useState(false);
 
+  const getProxiedUrl = (url: string | null) => {
+    if (!url) return fallbackSrc;
+    if (url.startsWith('http://img')) {
+      return `https://images.weserv.nl/?url=${encodeURIComponent(url)}`;
+    }
+    return url;
+  };
+
   // If product changes, reset state
   useEffect(() => {
-    setSrc(product.imageUrl || getImageUrl(product.name, width, height));
+    setSrc(getProxiedUrl(product.imageUrl));
     setError(false);
   }, [product.imageUrl, product.name, width, height]);
 
