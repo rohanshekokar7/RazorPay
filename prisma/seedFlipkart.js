@@ -31,9 +31,12 @@ async function main() {
 
   // Prepare product data for Prisma
   const productsToInsert = results.map(row => {
-    // Parse price, default to 20 if missing, convert from INR to USD roughly (divide by 80)
-    let rawPrice = parseFloat(row.discounted_price) || parseFloat(row.retail_price);
-    if (isNaN(rawPrice) || rawPrice <= 0) rawPrice = 1600; // default 1600 INR = 20 USD
+    // Parse original and discounted prices
+    let originalPrice = parseFloat(row.retail_price);
+    if (isNaN(originalPrice) || originalPrice <= 0) originalPrice = 2000; // default to 2000 INR
+    
+    let rawPrice = parseFloat(row.discounted_price);
+    if (isNaN(rawPrice) || rawPrice <= 0) rawPrice = originalPrice;
     
     // Extract the first image URL from the stringified array
     let imageUrl = null;
@@ -59,7 +62,8 @@ async function main() {
     return {
       name: row.product_name,
       description: row.description || 'No description available',
-      price: rawPrice, // Store the raw price directly
+      price: rawPrice,
+      originalPrice: originalPrice,
       inStock: true,
       imageUrl: imageUrl,
       category: category

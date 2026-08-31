@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Settings2, X, ShieldAlert, BadgeCheck, Loader2, SquarePen } from 'lucide-react';
+import { Send, Bot, User, Settings2, X, ShieldAlert, BadgeCheck, Loader2, SquarePen, Mic, FastForward } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -18,7 +18,7 @@ interface Message {
   paymentLink?: { url: string; amount: number; title: string } | null;
   imageUrl?: string | null;
   isStepUp?: boolean;
-  approvalRequest?: { item: string; amount: number; category: string } | null;
+  approvalRequest?: { item: string; amount: number; category: string; line_items?: any[] } | null;
 }
 
 interface ChatInterfaceProps {
@@ -30,7 +30,7 @@ interface ChatInterfaceProps {
 export function ChatInterface({ onLogsReceived, simulatePaymentTick = 0, externalMessageTrigger }: ChatInterfaceProps) {
   const { mandate, deductFromLimit } = useAgent();
   const [showSettings, setShowSettings] = useState(false);
-  const [pendingTx, setPendingTx] = useState<{ amount: number, category: string, itemName: string } | null>(null);
+  const [pendingTx, setPendingTx] = useState<{ amount: number, category: string, itemName: string, line_items?: any[] } | null>(null);
   const [popupImage, setPopupImage] = useState<string | null>(null);
 
   const [messages, setMessages] = useState<Message[]>([
@@ -42,6 +42,8 @@ export function ChatInterface({ onLogsReceived, simulatePaymentTick = 0, externa
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
@@ -212,6 +214,69 @@ export function ChatInterface({ onLogsReceived, simulatePaymentTick = 0, externa
     await handleSendMessage(currentInput);
   };
 
+  const handleSimulate30Days = async () => {
+    if (isLoading) return;
+    if (onLogsReceived) {
+      onLogsReceived([{ timestamp: new Date().toISOString(), level: 'INFO', message: `[Simulation] Fast-forwarding 30 days.` } as any]);
+    }
+    await handleHiddenSystemMessage("[SYSTEM_EVENT: 30_DAYS_PASSED] Predict a consumable the user might need to restock (like face wash, socks, or shoe polish) from the catalog and pitch them a refill using their active A2A mandate.");
+  };
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      const chunks: BlobPart[] = [];
+
+      mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(chunks, { type: 'audio/webm' });
+        await handleAudioUpload(audioBlob);
+        stream.getTracks().forEach(t => t.stop());
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+    } catch (err) {
+      console.error('Error accessing microphone', err);
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  };
+
+  const handleAudioUpload = async (audioBlob: Blob) => {
+    setIsLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', audioBlob);
+
+      const res = await fetch('/api/transcribe', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!res.ok) throw new Error('Transcription failed');
+      const data = await res.json();
+      
+      if (data.text) {
+        if (onLogsReceived) {
+          onLogsReceived([{ timestamp: new Date().toISOString(), level: 'SUCCESS', message: `[Voice Captured] Transcribed: "${data.text}"` } as any]);
+        }
+        await handleSendMessage(data.text);
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleApproveOverage = async () => {
     if (!pendingTx) return;
 
@@ -229,6 +294,7 @@ export function ChatInterface({ onLogsReceived, simulatePaymentTick = 0, externa
           category: pendingTx.category,
           itemName: pendingTx.itemName,
           bypassMandate: true,
+          line_items: pendingTx.line_items,
           mandate: {
             isActive: mandate.isActive,
             maxLimit: mandate.maxLimit,
@@ -264,7 +330,7 @@ export function ChatInterface({ onLogsReceived, simulatePaymentTick = 0, externa
     }
   };
 
-  const handleApprovePurchase = async (req: { item: string, amount: number, category: string }, messageId: string) => {
+  const handleApprovePurchase = async (req: { item: string, amount: number, category: string, line_items?: any[] }, messageId: string) => {
     // Remove the approval buttons to prevent multiple clicks
     setMessages(prev => prev.map(m => m.id === messageId ? { ...m, approvalRequest: null } : m));
     
@@ -282,6 +348,7 @@ export function ChatInterface({ onLogsReceived, simulatePaymentTick = 0, externa
             amount: req.amount,
             category: req.category,
             itemName: req.item,
+            line_items: req.line_items,
             mandate: {
               isActive: mandate.isActive,
               maxLimit: mandate.maxLimit,
@@ -607,18 +674,39 @@ export function ChatInterface({ onLogsReceived, simulatePaymentTick = 0, externa
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask about a product..."
-            className="w-full rounded-full border border-gray-200 bg-gray-50 py-3 pl-5 pr-12 text-sm focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all text-black"
-            disabled={isLoading}
+            placeholder="Ask about a product or haggle..."
+            className="w-full rounded-full border border-gray-200 bg-gray-50 py-3 pl-5 pr-[5.5rem] text-sm focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all text-black"
+            disabled={isLoading || isRecording}
           />
-          <button
-            type="submit"
-            disabled={!input.trim() || isLoading}
-            className="absolute right-2 flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
-          >
-            <Send className="h-4 w-4 -ml-0.5" />
-          </button>
+          <div className="absolute right-2 flex items-center gap-1">
+            <button
+              type="button"
+              onClick={isRecording ? stopRecording : startRecording}
+              disabled={isLoading}
+              className={`flex h-9 w-9 items-center justify-center rounded-full text-white transition-colors disabled:opacity-75 disabled:cursor-not-allowed ${isRecording ? 'bg-red-500 hover:bg-red-600 animate-pulse' : 'bg-gray-400 hover:bg-gray-500'}`}
+            >
+              <Mic className="h-4 w-4" />
+            </button>
+            <button
+              type="submit"
+              disabled={!input.trim() || isLoading || isRecording}
+              className="flex h-9 w-9 items-center justify-center rounded-full text-white bg-blue-600 hover:bg-blue-700 transition-colors disabled:opacity-75 disabled:cursor-not-allowed"
+            >
+              <Send className="h-4 w-4 -ml-0.5" />
+            </button>
+          </div>
         </form>
+        <div className="mt-3 flex justify-center">
+          <button 
+            type="button"
+            onClick={handleSimulate30Days}
+            disabled={isLoading || isRecording || !mandate.isActive}
+            className="flex items-center gap-2 px-4 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-full text-xs font-medium transition-colors disabled:opacity-50"
+          >
+            <FastForward className="w-3 h-3" />
+            Simulate 30 Days Later (Auto-Replenish)
+          </button>
+        </div>
       </div>
       
       <AnimatePresence>

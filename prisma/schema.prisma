@@ -21,8 +21,9 @@ model Product {
   id          String  @id @default(uuid())
   name        String
   description String
-  price       Float
-  inStock     Boolean
+  price         Float
+  originalPrice Float?
+  inStock       Boolean
   accessoryId String?
   imageUrl    String?
   category    String?
