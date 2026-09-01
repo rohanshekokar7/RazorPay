@@ -1,3 +1,4 @@
+require('dotenv').config({ path: '.env.local' });
 const fs = require('fs');
 const csv = require('csv-parser');
 const { PrismaClient } = require('@prisma/client');
@@ -92,8 +93,7 @@ main()
     process.exit(0);
   })
   .catch(async (e) => {
-    console.error("Error code:", e.code);
-    console.error("Error message (first 200 chars):", e.message.substring(0, 200));
+    console.error(e);
     await prisma.$disconnect();
     process.exit(1);
   });
