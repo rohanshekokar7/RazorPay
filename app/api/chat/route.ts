@@ -275,11 +275,17 @@ Once the user confirms (either the single item or the bundle), invoke 'generate_
             let products = await prisma.product.findMany({
                 where: searchTerms.length > 0 ? {
                     inStock: true,
-                    AND: searchTerms.map((term: string) => ({
-                        name: { contains: term, mode: 'insensitive' }
+                    OR: searchTerms.map((term: string) => ({
+                        OR: [
+                            { name: { contains: term, mode: 'insensitive' } },
+                            { category: { contains: term, mode: 'insensitive' } }
+                        ]
                     }))
                 } : {
-                    name: { contains: args.search_term || '', mode: 'insensitive' },
+                    OR: [
+                        { name: { contains: args.search_term || '', mode: 'insensitive' } },
+                        { category: { contains: args.search_term || '', mode: 'insensitive' } }
+                    ],
                     inStock: true
                 },
                 take: 5
@@ -288,7 +294,13 @@ Once the user confirms (either the single item or the bundle), invoke 'generate_
             // Fallback if no exact match: try just the first significant word
             if (products.length === 0 && searchTerms.length > 1) {
                 products = await prisma.product.findMany({
-                    where: { name: { contains: searchTerms[0], mode: 'insensitive' }, inStock: true },
+                    where: { 
+                        inStock: true,
+                        OR: [
+                            { name: { contains: searchTerms[0], mode: 'insensitive' } },
+                            { category: { contains: searchTerms[0], mode: 'insensitive' } }
+                        ]
+                    },
                     take: 5
                 });
             }
