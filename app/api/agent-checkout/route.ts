@@ -19,7 +19,7 @@ export async function POST(request: Request) {
       for (const item of line_items) {
         const product = await prisma.product.findUnique({ where: { id: item.item_id } });
         if (product) {
-          const discount = Math.min(item.requested_discount_percentage || 0, 20);
+          const discount = Math.min(item.requested_discount_percentage || 0, 18);
           const discountedPrice = product.price * (1 - (discount / 100));
           serverTotalAmount += discountedPrice * item.quantity;
         }
