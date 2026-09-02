@@ -181,7 +181,7 @@ export async function POST(req: Request) {
     let auditLogs: Array<{ id: string, timestamp: string, step: string, status: "INFO" | "SUCCESS" | "ERROR", details: string }> = [];
     let paymentLink: { url: string, amount: number, title: string } | null = null;
     let imageUrl: string | null = null;
-    let approvalRequest: { item: string, amount: number, category: string } | null = null;
+    let approvalRequest: { item: string, amount: number, category: string, line_items?: any[] } | null = null;
     let finalReply = "";
 
     const addLog = (step: string, status: "INFO" | "SUCCESS" | "ERROR", details: string) => {
